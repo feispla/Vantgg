@@ -25,3 +25,7 @@ The app uses the migration files in `migrations/`. Configure the production data
 ## Deployment
 
 The intended production path is a new private GitHub repository named `vantpremium`, connected to Vercel, with the Postgres database hosted on Supabase and Stripe webhook verification configured in Vercel environment variables.
+
+## Integrated repositories
+
+This repository is the canonical merge target for `vantpremium`, `vantgoogle`, and `CROSAIM.GG-railwaybot`. The Google and X/Twitter sign-in providers remain defined in `src/lib/auth/providers.ts` as `grok-google` and `grok-x` (`twitter` upstream), with the existing callback and popup flow unchanged. The Discord bot and its operational contracts are preserved under `integrations/vantbot/`; they use the signed VANT sync API and must run as a separate persistent worker. The web application remains the single canonical source for database migrations, including `migrations/0008_discord_integration.sql`; duplicate standalone bot schema files are intentionally not copied into the deployment root.

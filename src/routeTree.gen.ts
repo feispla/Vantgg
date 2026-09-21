@@ -27,6 +27,7 @@ import { Route as GlobeRouteImport } from './routes/globe'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MyTicketsRouteImport } from './routes/my-tickets'
+import { Route as OndasRouteImport } from './routes/ondas'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PlayersRouteImport } from './routes/players'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -149,6 +150,11 @@ const LoginRoute = LoginRouteImport.update({
 const MyTicketsRoute = MyTicketsRouteImport.update({
   id: '/my-tickets',
   path: '/my-tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OndasRoute = OndasRouteImport.update({
+  id: '/ondas',
+  path: '/ondas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OpsRoute = OpsRouteImport.update({
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRouteWithChildren
   '/login': typeof LoginRoute
   '/my-tickets': typeof MyTicketsRoute
+  '/ondas': typeof OndasRoute
   '/ops': typeof OpsRoute
   '/players': typeof PlayersRouteWithChildren
   '/pricing': typeof PricingRoute
@@ -388,6 +395,7 @@ export interface FileRoutesByTo {
   '/globe': typeof GlobeRoute
   '/login': typeof LoginRoute
   '/my-tickets': typeof MyTicketsRoute
+  '/ondas': typeof OndasRoute
   '/ops': typeof OpsRoute
   '/pricing': typeof PricingRoute
   '/profile': typeof ProfileRoute
@@ -440,6 +448,7 @@ export interface FileRoutesById {
   '/legal': typeof LegalRouteWithChildren
   '/login': typeof LoginRoute
   '/my-tickets': typeof MyTicketsRoute
+  '/ondas': typeof OndasRoute
   '/ops': typeof OpsRoute
   '/players': typeof PlayersRouteWithChildren
   '/pricing': typeof PricingRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/login'
     | '/my-tickets'
+    | '/ondas'
     | '/ops'
     | '/players'
     | '/pricing'
@@ -547,6 +557,7 @@ export interface FileRouteTypes {
     | '/globe'
     | '/login'
     | '/my-tickets'
+    | '/ondas'
     | '/ops'
     | '/pricing'
     | '/profile'
@@ -598,6 +609,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/login'
     | '/my-tickets'
+    | '/ondas'
     | '/ops'
     | '/players'
     | '/pricing'
@@ -652,6 +664,7 @@ export interface RootRouteChildren {
   LegalRoute: typeof LegalRouteWithChildren
   LoginRoute: typeof LoginRoute
   MyTicketsRoute: typeof MyTicketsRoute
+  OndasRoute: typeof OndasRoute
   OpsRoute: typeof OpsRoute
   PlayersRoute: typeof PlayersRouteWithChildren
   PricingRoute: typeof PricingRoute
@@ -803,6 +816,13 @@ declare module '@tanstack/react-router' {
       path: '/my-tickets'
       fullPath: '/my-tickets'
       preLoaderRoute: typeof MyTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ondas': {
+      id: '/ondas'
+      path: '/ondas'
+      fullPath: '/ondas'
+      preLoaderRoute: typeof OndasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ops': {
@@ -1125,6 +1145,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRoute: LegalRouteWithChildren,
   LoginRoute: LoginRoute,
   MyTicketsRoute: MyTicketsRoute,
+  OndasRoute: OndasRoute,
   OpsRoute: OpsRoute,
   PlayersRoute: PlayersRouteWithChildren,
   PricingRoute: PricingRoute,
