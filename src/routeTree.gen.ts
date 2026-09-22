@@ -15,6 +15,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ApplyRouteImport } from './routes/apply'
+import { Route as BotRouteImport } from './routes/bot'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as CookiesRouteImport } from './routes/cookies'
@@ -56,6 +57,7 @@ import { Route as PlayersUsernameRouteImport } from './routes/players.$username'
 import { Route as TournamentsIndexRouteImport } from './routes/tournaments.index'
 import { Route as TournamentsPrivateRouteImport } from './routes/tournaments.private'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiBotHealthRouteImport } from './routes/api/bot/health'
 import { Route as ApiDiscordEventsRouteImport } from './routes/api/discord/events'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiVantApplicationsRouteImport } from './routes/api/vant/applications'
@@ -90,6 +92,11 @@ const AdminRoute = AdminRouteImport.update({
 const ApplyRoute = ApplyRouteImport.update({
   id: '/apply',
   path: '/apply',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BotRoute = BotRouteImport.update({
+  id: '/bot',
+  path: '/bot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutRoute = CheckoutRouteImport.update({
@@ -297,6 +304,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBotHealthRoute = ApiBotHealthRouteImport.update({
+  id: '/api/bot/health',
+  path: '/api/bot/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDiscordEventsRoute = ApiDiscordEventsRouteImport.update({
   id: '/api/discord/events',
   path: '/api/discord/events',
@@ -330,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/apply': typeof ApplyRoute
+  '/bot': typeof BotRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/contacto': typeof ContactoRoute
   '/cookies': typeof CookiesRoute
@@ -371,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/bot/health': typeof ApiBotHealthRoute
   '/api/discord/events': typeof ApiDiscordEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/vant/applications': typeof ApiVantApplicationsRoute
@@ -384,6 +398,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/apply': typeof ApplyRoute
+  '/bot': typeof BotRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/contacto': typeof ContactoRoute
   '/cookies': typeof CookiesRoute
@@ -422,6 +437,7 @@ export interface FileRoutesByTo {
   '/players': typeof PlayersIndexRoute
   '/tournaments': typeof TournamentsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/bot/health': typeof ApiBotHealthRoute
   '/api/discord/events': typeof ApiDiscordEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/vant/applications': typeof ApiVantApplicationsRoute
@@ -436,6 +452,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/admin': typeof AdminRoute
   '/apply': typeof ApplyRoute
+  '/bot': typeof BotRoute
   '/checkout': typeof CheckoutRouteWithChildren
   '/contacto': typeof ContactoRoute
   '/cookies': typeof CookiesRoute
@@ -477,6 +494,7 @@ export interface FileRoutesById {
   '/players/': typeof PlayersIndexRoute
   '/tournaments/': typeof TournamentsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/bot/health': typeof ApiBotHealthRoute
   '/api/discord/events': typeof ApiDiscordEventsRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/vant/applications': typeof ApiVantApplicationsRoute
@@ -492,6 +510,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/apply'
+    | '/bot'
     | '/checkout'
     | '/contacto'
     | '/cookies'
@@ -533,6 +552,7 @@ export interface FileRouteTypes {
     | '/players/'
     | '/tournaments/'
     | '/api/auth/$'
+    | '/api/bot/health'
     | '/api/discord/events'
     | '/api/stripe/webhook'
     | '/api/vant/applications'
@@ -546,6 +566,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/apply'
+    | '/bot'
     | '/checkout'
     | '/contacto'
     | '/cookies'
@@ -584,6 +605,7 @@ export interface FileRouteTypes {
     | '/players'
     | '/tournaments'
     | '/api/auth/$'
+    | '/api/bot/health'
     | '/api/discord/events'
     | '/api/stripe/webhook'
     | '/api/vant/applications'
@@ -597,6 +619,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/admin'
     | '/apply'
+    | '/bot'
     | '/checkout'
     | '/contacto'
     | '/cookies'
@@ -638,6 +661,7 @@ export interface FileRouteTypes {
     | '/players/'
     | '/tournaments/'
     | '/api/auth/$'
+    | '/api/bot/health'
     | '/api/discord/events'
     | '/api/stripe/webhook'
     | '/api/vant/applications'
@@ -652,6 +676,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   AdminRoute: typeof AdminRoute
   ApplyRoute: typeof ApplyRoute
+  BotRoute: typeof BotRoute
   CheckoutRoute: typeof CheckoutRouteWithChildren
   ContactoRoute: typeof ContactoRoute
   CookiesRoute: typeof CookiesRoute
@@ -684,6 +709,7 @@ export interface RootRouteChildren {
   VerifyPurchaseRoute: typeof VerifyPurchaseRoute
   JoinPlanIdRoute: typeof JoinPlanIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiBotHealthRoute: typeof ApiBotHealthRoute
   ApiDiscordEventsRoute: typeof ApiDiscordEventsRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   ApiVantApplicationsRoute: typeof ApiVantApplicationsRoute
@@ -732,6 +758,13 @@ declare module '@tanstack/react-router' {
       path: '/apply'
       fullPath: '/apply'
       preLoaderRoute: typeof ApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bot': {
+      id: '/bot'
+      path: '/bot'
+      fullPath: '/bot'
+      preLoaderRoute: typeof BotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout': {
@@ -1021,6 +1054,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bot/health': {
+      id: '/api/bot/health'
+      path: '/api/bot/health'
+      fullPath: '/api/bot/health'
+      preLoaderRoute: typeof ApiBotHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/discord/events': {
       id: '/api/discord/events'
       path: '/api/discord/events'
@@ -1133,6 +1173,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   AdminRoute: AdminRoute,
   ApplyRoute: ApplyRoute,
+  BotRoute: BotRoute,
   CheckoutRoute: CheckoutRouteWithChildren,
   ContactoRoute: ContactoRoute,
   CookiesRoute: CookiesRoute,
@@ -1165,6 +1206,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyPurchaseRoute: VerifyPurchaseRoute,
   JoinPlanIdRoute: JoinPlanIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiBotHealthRoute: ApiBotHealthRoute,
   ApiDiscordEventsRoute: ApiDiscordEventsRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   ApiVantApplicationsRoute: ApiVantApplicationsRoute,
