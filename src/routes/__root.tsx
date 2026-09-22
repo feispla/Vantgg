@@ -1,16 +1,15 @@
-import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts, useRouterState } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { CookieBanner } from "@/components/cookie-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "sonner";
-import { Analytics } from "@vercel/analytics/react";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "VANT REALM";
+const APP_NAME = "NovaTech Systems — Connected clarity";
 const APP_DESCRIPTION =
-  "VANT REALM — circuito competitivo. Ranked, insignias Bronze a Legends, torneos y perfiles de jugador.";
+  "NovaTech Systems builds the operating layer for teams navigating more variables, more velocity, and less room for noise.";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -19,7 +18,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: APP_NAME },
       { name: "description", content: APP_DESCRIPTION },
-      { name: "theme-color", content: "#050507" },
+      { name: "theme-color", content: "#0a1220" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -51,7 +50,6 @@ function RootShell() {
           <CookieBanner />
           <Toaster theme="dark" position="top-center" />
         </AuthProvider>
-        <Analytics />
         <Scripts />
       </body>
     </html>
@@ -59,13 +57,15 @@ function RootShell() {
 }
 
 function AppFrame() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isNovaTech = pathname === "/";
   return (
     <div className="flex min-h-dvh flex-col">
-      <SiteHeader />
+      {!isNovaTech && <SiteHeader />}
       <div className="flex-1">
         <Outlet />
       </div>
-      <SiteFooter />
+      {!isNovaTech && <SiteFooter />}
     </div>
   );
 }
