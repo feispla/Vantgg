@@ -1,52 +1,101 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Bell, Boxes, Check, ChevronDown, ChevronLeft, ChevronRight, FileDown, Globe2, LayoutDashboard, Mail, Menu, Package, Play, Search, Settings2, Sparkles, TrendingUp, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowUpRight } from "lucide-react";
+import { ContactForm } from "@/components/contact-form";
+import { HeroCommand } from "@/components/hero-command";
+import { PlanCard } from "@/components/plan-card";
+import { RankLadder } from "@/components/rank-ladder";
+import { SectionKicker } from "@/components/section-kicker";
+import { buttonVariants } from "@/components/ui/button";
+import { PLANS } from "@/lib/plans";
+import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({ component: NovaTechHome });
-type Surface = "overview" | "vanflow" | "vants";
-const products = [
-  { id: "vanflow", name: "VANFlow", eyebrow: "Inventario inteligente", description: "La capa operativa para mover stock con precisión, desde el primer pedido hasta el último kilómetro.", icon: Boxes },
-  { id: "vants", name: "VANTS", eyebrow: "Marketing que convierte", description: "Campañas de email que combinan claridad creativa con datos que el equipo sí puede accionar.", icon: Mail },
-  { id: "signal", name: "Signal OS", eyebrow: "Inteligencia conectada", description: "Una vista compartida de las señales críticas que hacen avanzar a las organizaciones modernas.", icon: Globe2 },
-];
-const studies = [
-  { company: "NORTHSTAR", title: "Más señal. Menos inventario parado.", result: "-32% stock obsoleto", detail: "Northstar conectó sus 14 almacenes en una sola vista y convirtió el reabastecimiento en una decisión diaria, no en una sorpresa mensual.", accent: "#2563eb" },
-  { company: "VERDE STUDIO", title: "El lifecycle que volvió a hablar.", result: "+41% revenue por email", detail: "VANTS dio al equipo de Verde Studio una forma simple de orquestar segmentos, contenido y aprendizaje en el mismo lugar.", accent: "#f26b5e" },
-  { company: "ORBITAL", title: "Operar a escala sin perder foco.", result: "2.4× velocidad operativa", detail: "Con Signal OS, Orbital redujo la fricción entre sus equipos de operaciones, producto y finanzas.", accent: "#7c8aa5" },
-];
-const navItems: { id: Surface; label: string }[] = [{ id: "overview", label: "NovaTech" }, { id: "vanflow", label: "VANFlow" }, { id: "vants", label: "VANTS" }];
+export const Route = createFileRoute("/")({ component: Home });
 
-function NovaTechHome() {
-  const [surface, setSurface] = useState<Surface>("overview");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [studyIndex, setStudyIndex] = useState(0);
-  const [studyOpen, setStudyOpen] = useState(false);
-  const [compare, setCompare] = useState("vanflow");
-  const [toast, setToast] = useState("");
-  const filteredProducts = useMemo(() => products.filter((product) => `${product.name} ${product.eyebrow} ${product.description}`.toLowerCase().includes(search.toLowerCase())), [search]);
-  const showToast = (message: string) => { setToast(message); window.setTimeout(() => setToast(""), 2400); };
-  return <main className="novatech-shell">
-    <section className="nt-hero"><div className="nt-grid" /><div className="nt-topbar">
-      <button className="nt-brand" onClick={() => setSurface("overview")} aria-label="Volver a NovaTech"><span className="nt-brand-mark"><span /><span /><span /></span><span>NOVATECH <b>SYSTEMS</b></span></button>
-      <nav className="nt-nav" aria-label="Navegación principal">{navItems.map((item) => <button key={item.id} className={surface === item.id ? "active" : ""} onClick={() => setSurface(item.id)}>{item.label}</button>)}<a href="#insights">Insights</a><a href="#company">Company</a></nav>
-      <div className="nt-actions"><button className="nt-icon-button" onClick={() => setSearchOpen((open) => !open)} aria-label="Buscar"><Search size={17} /></button><button className="nt-button nt-button-light" onClick={() => showToast("Demo request received — we’ll be in touch.")}>Book a demo <ArrowRight size={15} /></button><button className="nt-menu" onClick={() => showToast("Use the product tabs to explore the suite.")} aria-label="Abrir menú"><Menu size={18} /></button></div>
-    </div>
-    {searchOpen && <div className="nt-search-panel"><Search size={17} /><input autoFocus value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products, insights, reports..." /><button onClick={() => { setSearch(""); setSearchOpen(false); }} aria-label="Cerrar búsqueda"><X size={17} /></button>{search && <div className="nt-search-results">{filteredProducts.length ? filteredProducts.map((product) => <button key={product.id} onClick={() => { setSurface(product.id === "vants" ? "vants" : product.id === "vanflow" ? "vanflow" : "overview"); setSearchOpen(false); setSearch(""); }}><product.icon size={15} /><span><b>{product.name}</b><small>{product.eyebrow}</small></span><ArrowRight size={14} /></button>) : <p>No results yet. Try “inventory” or “campaign”.</p>}</div>}</div>}
-    {surface === "overview" ? <Overview onSurface={setSurface} compare={compare} setCompare={setCompare} /> : surface === "vanflow" ? <Vanflow onToast={showToast} /> : <Vants onToast={showToast} />}
-    </section>
-    <section className="nt-logos" aria-label="Clientes"><span>TRUSTED BY TEAMS AT</span><b>northstar</b><b>ORBITAL</b><b>VERDE</b><b>meridian</b><b>FIELDWORK</b></section>
-    <section className="nt-section nt-studies" id="insights"><div className="nt-section-heading"><div><span className="nt-kicker">/ SELECTED WORK</span><h2>Built for the <em>decisions</em> ahead.</h2></div><div className="nt-carousel-controls"><button onClick={() => setStudyIndex((studyIndex + studies.length - 1) % studies.length)} aria-label="Caso anterior"><ChevronLeft size={17} /></button><span>0{studyIndex + 1} / 0{studies.length}</span><button onClick={() => setStudyIndex((studyIndex + 1) % studies.length)} aria-label="Siguiente caso"><ChevronRight size={17} /></button></div></div><button className="nt-study-card" onClick={() => setStudyOpen(true)}><div className="nt-study-visual" style={{ background: `linear-gradient(135deg, ${studies[studyIndex].accent}, #10192a 75%)` }}><span>{studies[studyIndex].company}</span><div className="nt-orbit"><div /></div><small>CASE STUDY / 2026</small></div><div className="nt-study-copy"><span className="nt-kicker">{studies[studyIndex].company} × NOVATECH</span><h3>{studies[studyIndex].title}</h3><p>{studies[studyIndex].detail}</p><strong>{studies[studyIndex].result} <ArrowRight size={16} /></strong><span className="nt-learn">Read case study <ArrowRight size={15} /></span></div></button></section>
-    <section className="nt-section nt-proof" id="company"><div className="nt-proof-callout"><span className="nt-kicker">/ THE SIGNAL</span><h2>The next advantage is a <em>clearer view.</em></h2><p>NovaTech Systems builds the operating layer for teams navigating more variables, more velocity, and less room for noise.</p><button className="nt-button nt-button-blue" onClick={() => showToast("Company profile downloaded.")}>Our point of view <ArrowRight size={15} /></button></div><div className="nt-proof-stats"><div><strong>12.8M</strong><span>decisions supported</span></div><div><strong>38</strong><span>markets connected</span></div><div><strong>99.98%</strong><span>platform uptime</span></div><div><strong>24/7</strong><span>human support</span></div></div></section>
-    <section className="nt-section nt-reports"><div><span className="nt-kicker">/ LATEST INSIGHTS</span><h2>Thinking in <em>public.</em></h2></div><div className="nt-report-grid">{[{ tag: "REPORT", title: "The operational clarity index", author: "Maya Chen · Research" }, { tag: "FIELD NOTE", title: "Why the best dashboards feel quiet", author: "Jon Bell · Design" }, { tag: "NEWS", title: "NovaTech expands the Signal OS network", author: "NovaTech · Press" }].map((item) => <article key={item.title} className="nt-report-card"><span className="nt-kicker">{item.tag}</span><h3>{item.title}</h3><p>{item.author}</p><button onClick={() => showToast("Report queued for download.")}><FileDown size={15} /> Download</button></article>)}</div></section>
-    <footer className="nt-footer"><div><span className="nt-brand-mark"><span /><span /><span /></span><p>Technology for the decisions that matter.</p></div><div><span className="nt-kicker">/ EXPLORE</span><a onClick={() => setSurface("vanflow")}>VANFlow</a><a onClick={() => setSurface("vants")}>VANTS</a><a href="#insights">Insights</a></div><div><span className="nt-kicker">/ COMPANY</span><a href="#company">About us</a><a onClick={() => showToast("Press kit queued for download.")}>Press kit</a><a onClick={() => showToast("Contact form opening soon.")}>Contact</a></div><div><span className="nt-kicker">/ STAY IN THE LOOP</span><p>Monthly signal, no noise.</p><div className="nt-subscribe"><input placeholder="Work email" /><button onClick={() => showToast("You’re on the list.")} aria-label="Suscribirse"><ArrowRight size={16} /></button></div></div><small>© 2026 NovaTech Systems · Privacy · Security</small></footer>
-    {studyOpen && <div className="nt-modal-backdrop" onClick={() => setStudyOpen(false)}><div className="nt-modal" onClick={(event) => event.stopPropagation()}><button className="nt-modal-close" onClick={() => setStudyOpen(false)} aria-label="Cerrar"><X size={18} /></button><span className="nt-kicker">CASE STUDY / {studies[studyIndex].company}</span><h2>{studies[studyIndex].title}</h2><p>{studies[studyIndex].detail} {studies[studyIndex].company} worked with NovaTech to give every team the same operating picture.</p><div className="nt-modal-result"><strong>{studies[studyIndex].result}</strong><span>measured in the first 90 days</span></div><button className="nt-button nt-button-blue" onClick={() => setStudyOpen(false)}>Back to work <ArrowRight size={15} /></button></div></div>}
-    {toast && <div className="nt-toast"><Check size={16} />{toast}</div>}
-  </main>;
+function Home() {
+  return (
+    <main>
+      <HeroCommand />
+
+      <section id="rangos" className="border-b border-line">
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+          <SectionKicker code="01" label="Circuito" />
+          <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
+            Siete rangos. Tres divisiones. Un techo.
+          </h2>
+          <p className="mt-4 max-w-xl text-muted">
+            Bronze a Legends, cada uno con I, II y III. Unranked hasta cerrar placement. El tablero solo lista cuentas
+            reales.
+          </p>
+          <div className="mt-12">
+            <RankLadder />
+          </div>
+          <div className="mt-10 flex flex-wrap gap-3">
+            <Link to="/ranked" className={buttonVariants()}>
+              Entrar al Ranked
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+            <Link to="/register" className={buttonVariants({ variant: "ghost" })}>
+              Crear cuenta
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+        <SectionKicker code="02" label="El call" />
+        <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold leading-[0.98] tracking-[-0.05em] sm:text-5xl">
+          Cinco rondas. El mark decide.
+        </h2>
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {[
+            { n: "01", t: "Placement", d: "Cinco partidas y el circuito te asigna Bronze a Platinum." },
+            { n: "02", t: "VANT CALL", d: "Espera el isotipo. El primer frame limpio gana la ronda." },
+            { n: "03", t: "MMR vivo", d: "Elo contra el rival del circuito. Promoción I → II → III." },
+          ].map((step) => (
+            <article key={step.n} className="glass-card rounded-3xl p-6">
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">{step.n}</p>
+              <h3 className="mt-3 font-display text-2xl font-semibold">{step.t}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{step.d}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="border-y border-line bg-surface">
+        <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+          <SectionKicker code="03" label="Entrada" />
+          <h2 className="mt-5 max-w-3xl font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
+            Ranked es gratis. El invitational no.
+          </h2>
+          <p className="mt-4 max-w-xl text-muted">
+            Juega el circuito con una cuenta. Los tickets abren Pro Series, salas privadas y Elite.
+          </p>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {PLANS.map((plan) => (
+              <PlanCard key={plan.id} plan={plan} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contacto">
+        <div className="mx-auto grid w-full max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-2">
+          <div>
+            <SectionKicker code="04" label="Contacto" />
+            <h2 className="mt-5 font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
+              Un formulario, dos destinos.
+            </h2>
+            <p className="mt-4 text-muted">
+              Discord vía VantBot y correo a feispla@hotmail.com. Tryouts autenticados siguen el mismo outbox.
+            </p>
+            <Link to="/contacto" className={cn(buttonVariants({ variant: "ghost" }), "mt-8")}>
+              Página de contacto
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <ContactForm source="home" />
+        </div>
+      </section>
+    </main>
+  );
 }
-
-function Overview({ onSurface, compare, setCompare }: { onSurface: (surface: Surface) => void; compare: string; setCompare: (value: string) => void }) { const product = products.find((p) => p.id === compare) ?? products[0]; return <div className="nt-hero-content"><div className="nt-hero-copy"><span className="nt-kicker">/ THE OPERATING LAYER FOR WHAT’S NEXT</span><h1>Make complexity<br /><em>move.</em></h1><p>NovaTech Systems helps ambitious teams turn operational noise into a clear, connected advantage.</p><div className="nt-hero-cta"><button className="nt-button nt-button-blue" onClick={() => onSurface("vanflow")}>Explore the platform <ArrowRight size={15} /></button><button className="nt-play" onClick={() => document.getElementById("insights")?.scrollIntoView({ behavior: "smooth" })}><span><Play size={12} fill="currentColor" /></span> See it in action</button></div></div><div className="nt-hero-art"><div className="nt-art-label">NOVA / 01</div><div className="nt-rings"><div /><div /><div /><span>CLARITY<br /><b>↑</b></span></div><div className="nt-art-readout"><span>CONNECTED SIGNAL</span><strong>04.28.26</strong><small>system online / 99.98%</small></div></div><div className="nt-compare"><div><span className="nt-kicker">/ EXPLORE THE SUITE</span><h2>One system.<br /><em>Many levers.</em></h2></div><div className="nt-compare-switch">{products.map((item) => <button key={item.id} className={compare === item.id ? "selected" : ""} onClick={() => setCompare(item.id)}><item.icon size={16} />{item.name}</button>)}</div><div className="nt-compare-detail"><div><span className="nt-kicker">{product.eyebrow}</span><h3>{product.name}</h3></div><p>{product.description}</p><button onClick={() => onSurface(compare === "vants" ? "vants" : "vanflow")}>View product <ArrowRight size={15} /></button></div></div></div>; }
-
-function Vanflow({ onToast }: { onToast: (message: string) => void }) { const [range, setRange] = useState("Last 30 days"); return <div className="nt-product-content"><div className="nt-product-head"><div><span className="nt-kicker cobalt-kicker">/ VANFLOW · INVENTORY CONTROL</span><h1>Good inventory<br /><em>moves quietly.</em></h1><p>A command center for stock levels, replenishment, and warehouse distribution.</p></div><button className="nt-button nt-button-light" onClick={() => onToast("Inventory report exported.")}><FileDown size={15} /> Export report</button></div><div className="vf-dashboard"><div className="vf-side"><div className="vf-logo"><Boxes size={18} /> VANFlow</div>{[{ icon: LayoutDashboard, label: "Overview" }, { icon: Package, label: "Inventory" }, { icon: Bell, label: "Alerts", badge: "06" }, { icon: Globe2, label: "Warehouses" }, { icon: Settings2, label: "Settings" }].map((item, index) => <button key={item.label} className={index === 0 ? "selected" : ""} onClick={() => onToast(`${item.label} view selected.`)}><item.icon size={16} />{item.label}{item.badge && <b>{item.badge}</b>}</button>)}</div><div className="vf-main"><div className="vf-toolbar"><div><span>Good morning, Alex</span><small>Here’s what needs your attention.</small></div><div className="vf-toolbar-actions"><button onClick={() => onToast("Date range updated.")}>{range}<ChevronDown size={14} /></button><button className="vf-avatar">AC</button></div></div><div className="vf-kpis"><div><span>Total SKUs</span><strong>24,892</strong><small className="positive"><TrendingUp size={13} /> 8.4% <i>vs last month</i></small></div><div><span>Low stock alerts</span><strong>06</strong><small className="negative"><Bell size={13} /> 2 new <i>since yesterday</i></small></div><div><span>Pending orders</span><strong>1,284</strong><small className="positive"><TrendingUp size={13} /> 12.1% <i>vs last month</i></small></div></div><div className="vf-grid"><div className="vf-chart"><div className="vf-card-head"><div><span>Inventory by category</span><small>Units currently in stock</small></div><button onClick={() => setRange(range === "Last 30 days" ? "Last 90 days" : "Last 30 days")}>{range}<ChevronDown size={13} /></button></div><div className="vf-bars">{[{ n: "Hardware", v: 78, c: "#2563eb" }, { n: "Components", v: 61, c: "#60a5fa" }, { n: "Packaging", v: 44, c: "#93c5fd" }, { n: "Accessories", v: 35, c: "#c4d8f5" }, { n: "Consumables", v: 25, c: "#dbeafe" }].map((bar) => <div key={bar.n}><span>{bar.n}</span><div><i style={{ width: `${bar.v}%`, background: bar.c }} /></div><b>{bar.v * 10 + 240}</b></div>)}</div></div><div className="vf-alerts"><div className="vf-card-head"><div><span>Replenishment alerts</span><small>Thresholds needing action</small></div><button onClick={() => onToast("All alerts marked as reviewed.")}>View all</button></div>{[{ name: "Wireless Sensor / WS-240", loc: "WH · Rotterdam", qty: "12 / 50", level: "critical" }, { name: "Control Hub / CH-110", loc: "WH · Austin", qty: "38 / 80", level: "warning" }, { name: "Mounting Kit / MK-018", loc: "WH · Singapore", qty: "42 / 60", level: "warning" }].map((alert) => <button className="vf-alert" key={alert.name} onClick={() => onToast(`${alert.name} opened.`)}><span className={`vf-alert-dot ${alert.level}`} /><div><b>{alert.name}</b><small>{alert.loc}</small></div><strong>{alert.qty}</strong><ArrowRight size={14} /></button>)}</div></div><div className="vf-map"><div className="vf-card-head"><div><span>Warehouse distribution</span><small>Live inventory across 6 locations</small></div><button onClick={() => onToast("Warehouse directory opened.")}>Manage warehouses <ArrowRight size={13} /></button></div><div className="vf-map-canvas"><div className="vf-map-lines" /><span className="vf-pin p1">AMS <b>8.2k</b></span><span className="vf-pin p2">AUS <b>5.4k</b></span><span className="vf-pin p3">SIN <b>6.1k</b></span><span className="vf-pin p4">TOK <b>5.2k</b></span><div className="vf-map-legend"><span><i className="blue-dot" />Healthy</span><span><i className="orange-dot" />Needs attention</span></div></div></div></div></div></div>; }
-
-function Vants({ onToast }: { onToast: (message: string) => void }) { return <div className="nt-product-content vants-content"><div className="nt-product-head"><div><span className="nt-kicker coral-kicker">/ VANTS · EMAIL MARKETING</span><h1>Better campaigns.<br /><em>Clearer signal.</em></h1><p>Create, send, and learn from email that feels like your brand — not a template.</p></div><button className="nt-button nt-button-light" onClick={() => onToast("Campaign draft created.")}><Sparkles size={15} /> Create campaign</button></div><div className="vants-dashboard"><div className="vants-head"><div><span>Good morning, Maya</span><small>Here’s how your audience is growing.</small></div><button onClick={() => onToast("Date range updated.")}>Last 30 days <ChevronDown size={14} /></button></div><div className="vants-kpis"><div><span>Open rate</span><strong>42.8%</strong><small>↑ 6.4% <i>vs previous period</i></small></div><div><span>Click rate</span><strong>8.94%</strong><small>↑ 1.8% <i>vs previous period</i></small></div><div><span>Subscribers</span><strong>18,492</strong><small>↑ 12.1% <i>this period</i></small></div><div className="vants-mini-chart"><span>Subscriber growth</span><div><i /><i /><i /><i /><i /><i /><i /></div></div></div><div className="vants-columns"><div className="vants-panel"><div className="vants-panel-head"><div><span>Recent campaigns</span><small>Performance at a glance</small></div><button onClick={() => onToast("Campaign library opened.")}>View all <ArrowRight size={13} /></button></div>{[{ name: "Spring / Product update", status: "Sent", metric: "42.8%", date: "Mar 28" }, { name: "Founders note #12", status: "Scheduled", metric: "—", date: "Apr 04" }, { name: "The quiet advantage", status: "Draft", metric: "—", date: "—" }].map((campaign) => <div className="vants-campaign" key={campaign.name}><span className={`vants-status ${campaign.status.toLowerCase()}`} /><div><b>{campaign.name}</b><small>{campaign.status} · {campaign.date}</small></div><strong>{campaign.metric}</strong><button onClick={() => onToast(`${campaign.name} selected.`)}><ArrowRight size={14} /></button></div>)}</div><div className="vants-panel vants-builder"><div className="vants-panel-head"><div><span>Drag & drop builder</span><small>Spring / Product update</small></div><button onClick={() => onToast("Builder preview opened.")}><Play size={13} /> Preview</button></div><div className="vants-email-preview"><div className="vants-email-top"><span className="vants-mini-logo">VANTS<span>.</span></span><span>View in browser</span></div><div className="vants-email-hero"><span className="vants-kicker">SPRING / 2026</span><h3>A little more<br /><em>room to think.</em></h3><p>A new perspective on what’s possible when your tools get quieter.</p><button onClick={() => onToast("Email preview CTA clicked.")}>Read the story <ArrowRight size={13} /></button></div><div className="vants-email-footer"><span>BUILD WITH VANTS</span><span>Unsubscribe</span></div></div></div></div></div><div className="vants-templates"><div><span className="nt-kicker coral-kicker">/ TEMPLATE LIBRARY</span><h2>Start with a <em>feeling.</em></h2></div><button onClick={() => onToast("Template library opened.")}>Browse all templates <ArrowRight size={15} /></button><div className="vants-template-cards"><div className="template-card template-coral"><span>ANNOUNCEMENT</span><b>Make the<br />moment<br /><em>matter.</em></b></div><div className="template-card template-blue"><span>NEWSLETTER</span><b>The signal<br />is getting<br /><em>clearer.</em></b></div><div className="template-card template-cream"><span>FOUNDER NOTE</span><b>A note from<br /><em>the inside.</em></b></div></div></div></div>; }
