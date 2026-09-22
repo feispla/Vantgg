@@ -7,9 +7,9 @@ import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "NovaTech Systems — Connected clarity";
+const APP_NAME = "VANT REALM — Competitive VALORANT";
 const APP_DESCRIPTION =
-  "NovaTech Systems builds the operating layer for teams navigating more variables, more velocity, and less room for noise.";
+  "VANT REALM — circuitos competitivos, torneos y ranked para jugadores de VALORANT.";
 
 export const Route = createRootRoute({
   head: () => ({
