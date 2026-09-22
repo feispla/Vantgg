@@ -5,6 +5,7 @@ import { CookieBanner } from "@/components/cookie-banner";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "VANT REALM";
@@ -50,6 +51,7 @@ function RootShell() {
           <CookieBanner />
           <Toaster theme="dark" position="top-center" />
         </AuthProvider>
+        <Analytics />
         <Scripts />
       </body>
     </html>
