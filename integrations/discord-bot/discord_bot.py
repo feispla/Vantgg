@@ -7,8 +7,11 @@ import hashlib
 import hmac
 import json
 from datetime import datetime
+from supabase import create_client, Client
 
 load_dotenv()
+
+# ========== CONFIG ==========
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 DISCORD_CLIENT_ID = os.getenv("DISCORD_CLIENT_ID")
@@ -16,8 +19,17 @@ DISCORD_GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 VANT_BOT_SYNC_SECRET = os.getenv("VANT_BOT_SYNC_SECRET")
 VANT_WEB_BASE_URL = os.getenv("VANT_WEB_BASE_URL", "https://vantgg.vercel.app/")
 
+# Supabase
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
 if not DISCORD_TOKEN:
     raise RuntimeError("Falta DISCORD_TOKEN")
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("Falta SUPABASE_URL o SUPABASE_KEY")
+
+# Initialize Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -28,11 +40,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f"✅ Bot: {bot.user}")
+    print(f"✅ Supabase: Conectado")
     try:
         synced = await bot.tree.sync()
         print(f"✅ {len(synced)} comandos sincronizados")
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Error sincronizando comandos: {e}")
 
 def sign_request(body: str) -> str:
     if not VANT_BOT_SYNC_SECRET:
@@ -61,6 +74,22 @@ async def sync_event(event_type: str, data: dict):
     except:
         pass
 
+def get_player_profile(discord_id: str):
+    """Obtiene perfil del jugador por Discord ID"""
+    try:
+        response = supabase.table("profiles").select("*").eq("discord_id", discord_id).single().execute()
+        return response.data if response.data else None
+    except:
+        return None
+
+def get_leaderboard(limit: int = 10):
+    """Obtiene top jugadores por puntos"""
+    try:
+        response = supabase.table("profiles").select("*").order("points", desc=True).limit(limit).execute()
+        return response.data if response.data else []
+    except:
+        return []
+
 # ========== RANKED ==========
 
 @bot.tree.command(name="ranked", description="Comandos de Ranked")
@@ -76,28 +105,98 @@ async def sync_event(event_type: str, data: dict):
     discord.app_commands.Choice(name="cancelar", value="cancelar"),
 ])
 async def ranked(interaction: discord.Interaction, accion: str):
-    """Comandos de Ranked: entrar, placement, perfil, estado, leaderboard, historial, cola, cancelar"""
+    """Comandos de Ranked"""
     embed = discord.Embed(title=f"🎮 Ranked - {accion}", color=discord.Color.red())
     
+    discord_id = str(interaction.user.id)
+    
     if accion == "entrar":
-        embed.description = "Te has unido a la cola de Ranked. Espera a un oponente..."
+        try:
+            existing = supabase.table("ranked_queue").select("*").eq("user_id", discord_id).execute()
+            if existing.data:
+                embed.description = "⚠️ Ya estás en la cola de Ranked."
+            else:
+                embed.description = "✅ Te has unido a la cola de Ranked. Esperando oponente..."
+        except:
+            embed.description = "❌ Error al agregar a la cola."
+    
     elif accion == "placement":
-        embed.description = "Tienes 5 partidas de colocación restantes."
+        profile = get_player_profile(discord_id)
+        if profile:
+            placements = profile.get("placements_left", 5)
+            embed.description = f"📝 Tienes **{placements}** partidas de colocación restantes."
+        else:
+            embed.description = "❌ No tienes perfil. Regístrate primero en la web."
+    
     elif accion == "perfil":
-        embed.description = f"Tu rango: UNRANKED | MMR: 0 | Wins: 0"
+        profile = get_player_profile(discord_id)
+        if profile:
+            embed.add_field(name="Usuario", value=profile.get("username", "N/A"), inline=False)
+            embed.add_field(name="Rango", value=profile.get("rank_key", "unranked").upper(), inline=True)
+            embed.add_field(name="Puntos", value=str(profile.get("points", 0)), inline=True)
+            embed.add_field(name="Victorias", value=str(profile.get("wins", 0)), inline=True)
+            embed.add_field(name="Derrotas", value=str(profile.get("losses", 0)), inline=True)
+            wr = 0
+            if profile.get("wins", 0) + profile.get("losses", 0) > 0:
+                wr = round(100 * profile.get("wins", 0) / (profile.get("wins", 0) + profile.get("losses", 0)), 1)
+            embed.add_field(name="WR%", value=f"{wr}%", inline=True)
+        else:
+            embed.description = "❌ No tienes perfil. Regístrate en https://vantgg.vercel.app/"
+    
     elif accion == "estado":
-        embed.description = "Estás fuera de la cola."
+        try:
+            in_queue = supabase.table("ranked_queue").select("*").eq("user_id", discord_id).execute()
+            if in_queue.data:
+                embed.description = "🔄 Estás en la cola de Ranked."
+            else:
+                embed.description = "✅ No estás en la cola."
+        except:
+            embed.description = "✅ No estás en la cola."
+    
     elif accion == "leaderboard":
-        embed.description = "```Top 10 Jugadores\n1. Player1 - MMR: 2500\n2. Player2 - MMR: 2400```"
+        leaders = get_leaderboard(10)
+        if leaders:
+            leaderboard_text = "```\n"
+            for i, player in enumerate(leaders, 1):
+                username = player.get("username", "Unknown")
+                points = player.get("points", 0)
+                leaderboard_text += f"{i}. {username} - {points} pts\n"
+            leaderboard_text += "```"
+            embed.description = leaderboard_text
+        else:
+            embed.description = "Sin datos de leaderboard."
+    
     elif accion == "historial":
-        embed.description = "Sin historial de partidas."
+        try:
+            history = supabase.table("ranked_history").select("*").eq("user_id", discord_id).order("created_at", desc=True).limit(5).execute()
+            if history.data:
+                history_text = ""
+                for match in history.data:
+                    result = match.get("result", "").upper()
+                    delta = match.get("points_delta", 0)
+                    history_text += f"• {result} ({delta:+d} pts)\n"
+                embed.description = history_text
+            else:
+                embed.description = "Sin historial de partidas."
+        except:
+            embed.description = "Sin historial de partidas."
+    
     elif accion == "cola":
-        embed.description = "No estás en la cola."
+        try:
+            queue = supabase.table("ranked_queue").select("id").execute()
+            embed.description = f"👥 Jugadores en cola: {len(queue.data) if queue.data else 0}"
+        except:
+            embed.description = "Error al obtener cola."
+    
     elif accion == "cancelar":
-        embed.description = "Has cancelado la búsqueda."
+        try:
+            supabase.table("ranked_queue").delete().eq("user_id", discord_id).execute()
+            embed.description = "✅ Cancelada la búsqueda."
+        except:
+            embed.description = "❌ Error al cancelar."
     
     await interaction.response.send_message(embed=embed)
-    await sync_event("ranked.action", {"userId": str(interaction.user.id), "action": accion})
+    await sync_event("ranked.action", {"userId": discord_id, "action": accion})
 
 # ========== JUGADOR ==========
 
@@ -113,18 +212,37 @@ async def jugador(interaction: discord.Interaction, accion: str, usuario: str = 
     """Comandos de jugador"""
     embed = discord.Embed(title=f"👤 Jugador - {accion}", color=discord.Color.blue())
     
+    discord_id = str(interaction.user.id)
+    profile = get_player_profile(discord_id)
+    
     if accion == "perfil":
-        embed.add_field(name="Usuario", value=interaction.user.name, inline=False)
-        embed.add_field(name="Rango", value="UNRANKED", inline=False)
-        embed.add_field(name="MMR", value="0", inline=False)
+        if profile:
+            embed.add_field(name="Usuario", value=profile.get("username", interaction.user.name), inline=False)
+            embed.add_field(name="Rango", value=profile.get("rank_key", "unranked").upper(), inline=False)
+            embed.add_field(name="Puntos", value=str(profile.get("points", 0)), inline=False)
+        else:
+            embed.description = "❌ Sin perfil. Regístrate en la web."
+    
     elif accion == "buscar":
-        embed.description = "Búsqueda de jugadores habilitada en la web."
+        embed.description = "🔍 Búsqueda de jugadores: https://vantgg.vercel.app/players"
+    
     elif accion == "estadisticas":
-        embed.add_field(name="Victorias", value="0", inline=True)
-        embed.add_field(name="Derrotas", value="0", inline=True)
-        embed.add_field(name="WR%", value="0%", inline=True)
+        if profile:
+            wins = profile.get("wins", 0)
+            losses = profile.get("losses", 0)
+            total = wins + losses
+            wr = round(100 * wins / total, 1) if total > 0 else 0
+            embed.add_field(name="Victorias", value=str(wins), inline=True)
+            embed.add_field(name="Derrotas", value=str(losses), inline=True)
+            embed.add_field(name="WR%", value=f"{wr}%", inline=True)
+        else:
+            embed.description = "❌ Sin perfil."
+    
     elif accion == "verificar":
-        embed.description = "Cuenta verificada ✅"
+        if profile:
+            embed.description = "✅ Cuenta verificada"
+        else:
+            embed.description = "❌ Cuenta no verificada"
     
     await interaction.response.send_message(embed=embed)
 
@@ -143,13 +261,13 @@ async def cuenta(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"🔐 Cuenta - {accion}", color=discord.Color.green())
     
     if accion == "crear":
-        embed.description = "Ve a https://vantgg.vercel.app/register para crear tu cuenta."
+        embed.description = "🔗 Ve a https://vantgg.vercel.app/register para crear tu cuenta."
     elif accion == "perfil":
-        embed.description = f"Perfil de {interaction.user.name}"
+        embed.description = f"👤 Perfil de {interaction.user.name}"
     elif accion == "conectar":
-        embed.description = "Tu Discord está conectado a VANT ✅"
+        embed.description = "✅ Tu Discord está conectado a VANT"
     elif accion == "privacidad":
-        embed.description = "Configuración de privacidad: PÚBLICA"
+        embed.description = "🔓 Privacidad: PÚBLICA"
     
     await interaction.response.send_message(embed=embed)
     await sync_event("account.action", {"userId": str(interaction.user.id), "action": accion})
@@ -169,13 +287,28 @@ async def torneo(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"🏆 Torneo - {accion}", color=discord.Color.gold())
     
     if accion == "lista":
-        embed.description = "**Torneos disponibles:**\n🔴 VANT Open - 64 slots\n🔵 VANT Pro Series - 32 slots"
+        try:
+            tournaments = supabase.table("tournaments").select("*").eq("status", "open").execute()
+            if tournaments.data:
+                tourney_text = ""
+                for t in tournaments.data[:5]:
+                    name = t.get("name", "Unknown")
+                    capacity = t.get("capacity", 0)
+                    tourney_text += f"• **{name}** ({capacity} slots)\n"
+                embed.description = tourney_text
+            else:
+                embed.description = "Sin torneos disponibles."
+        except:
+            embed.description = "Error cargando torneos."
+    
     elif accion == "ver":
-        embed.description = "Ve a https://vantgg.vercel.app/tournaments para más detalles."
+        embed.description = "📋 Ver torneos: https://vantgg.vercel.app/tournaments"
+    
     elif accion == "registrar":
-        embed.description = "Registrado en el torneo ✅"
+        embed.description = "📝 Regístrate en la web para participar en torneos."
+    
     elif accion == "participantes":
-        embed.description = "32/64 participantes"
+        embed.description = "👥 Ver participantes en la web."
     
     await interaction.response.send_message(embed=embed)
 
@@ -193,11 +326,16 @@ async def ticket(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"🎫 Ticket - {accion}", color=discord.Color.purple())
     
     if accion == "crear":
-        embed.description = "Abre un ticket en https://vantgg.vercel.app/support"
+        embed.description = "📧 Abre un ticket en https://vantgg.vercel.app/support"
     elif accion == "cerrar":
-        embed.description = "Ticket cerrado ✅"
+        embed.description = "✅ Ticket cerrado"
     elif accion == "listar":
-        embed.description = "Sin tickets abiertos."
+        try:
+            user_id = str(interaction.user.id)
+            tickets = supabase.table("support_tickets").select("*").eq("user_id", user_id).eq("status", "open").execute()
+            embed.description = f"📋 Tickets abiertos: {len(tickets.data) if tickets.data else 0}"
+        except:
+            embed.description = "Error cargando tickets."
     
     await interaction.response.send_message(embed=embed)
 
@@ -215,11 +353,11 @@ async def evento(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"📅 Evento - {accion}", color=discord.Color.blurple())
     
     if accion == "lista":
-        embed.description = "Eventos próximos disponibles en la web."
+        embed.description = "📋 Eventos: https://vantgg.vercel.app/events"
     elif accion == "ver":
-        embed.description = "Ve a https://vantgg.vercel.app/events"
+        embed.description = "👀 Ver eventos en la web"
     elif accion == "registrar":
-        embed.description = "Registrado en el evento ✅"
+        embed.description = "✅ Regístrate en la web para participar"
     
     await interaction.response.send_message(embed=embed)
 
@@ -237,11 +375,26 @@ async def temporada(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"📊 Temporada - {accion}", color=discord.Color.orange())
     
     if accion == "actual":
-        embed.description = "Temporada 1 está activa"
+        embed.description = "⏱️ Temporada 1 - ACTIVA"
     elif accion == "ranking":
-        embed.description = "```Ranking Temporada 1\n1. Player1 - 2500 MMR\n2. Player2 - 2400 MMR```"
+        leaders = get_leaderboard(5)
+        if leaders:
+            leaderboard_text = "```\n"
+            for i, player in enumerate(leaders, 1):
+                username = player.get("username", "Unknown")
+                points = player.get("points", 0)
+                leaderboard_text += f"{i}. {username} - {points} pts\n"
+            leaderboard_text += "```"
+            embed.description = leaderboard_text
+        else:
+            embed.description = "Sin ranking disponible."
     elif accion == "estadisticas":
-        embed.description = "Total jugadores: 0\nPartidas jugadas: 0"
+        try:
+            all_profiles = supabase.table("profiles").select("id").execute()
+            total_players = len(all_profiles.data) if all_profiles.data else 0
+            embed.description = f"👥 Total jugadores: {total_players}\n📊 Partidas: Próximamente"
+        except:
+            embed.description = "Error cargando estadísticas."
     
     await interaction.response.send_message(embed=embed)
 
@@ -263,11 +416,11 @@ async def admin(interaction: discord.Interaction, accion: str):
     embed = discord.Embed(title=f"⚙️ Admin - {accion}", color=discord.Color.dark_red())
     
     if accion == "temporada_iniciar":
-        embed.description = "Temporada iniciada ✅"
+        embed.description = "✅ Temporada iniciada"
     elif accion == "temporada_cerrar":
-        embed.description = "Temporada cerrada ✅"
+        embed.description = "✅ Temporada cerrada"
     elif accion == "leaderboard_actualizar":
-        embed.description = "Leaderboard actualizado ✅"
+        embed.description = "✅ Leaderboard actualizado"
     
     await interaction.response.send_message(embed=embed)
     await sync_event("admin.action", {"userId": str(interaction.user.id), "action": accion})
@@ -278,22 +431,20 @@ async def admin(interaction: discord.Interaction, accion: str):
 async def help_cmd(interaction: discord.Interaction):
     """Muestra los comandos disponibles"""
     embed = discord.Embed(title="📖 Ayuda VANT Bot", color=discord.Color.blurple())
-    embed.add_field(name="/ranked", value="Comandos de Ranked", inline=False)
-    embed.add_field(name="/jugador", value="Info de jugadores", inline=False)
-    embed.add_field(name="/cuenta", value="Gestión de cuenta", inline=False)
-    embed.add_field(name="/torneo", value="Torneos", inline=False)
-    embed.add_field(name="/ticket", value="Soporte", inline=False)
-    embed.add_field(name="/evento", value="Eventos", inline=False)
-    embed.add_field(name="/temporada", value="Info de temporada", inline=False)
-    embed.add_field(name="/admin", value="Comandos admin", inline=False)
+    embed.add_field(name="/ranked", value="🎮 Comandos de Ranked", inline=False)
+    embed.add_field(name="/jugador", value="👤 Info de jugadores", inline=False)
+    embed.add_field(name="/cuenta", value="🔐 Gestión de cuenta", inline=False)
+    embed.add_field(name="/torneo", value="🏆 Torneos", inline=False)
+    embed.add_field(name="/ticket", value="🎫 Soporte", inline=False)
+    embed.add_field(name="/evento", value="📅 Eventos", inline=False)
+    embed.add_field(name="/temporada", value="📊 Info de temporada", inline=False)
+    embed.add_field(name="/admin", value="⚙️ Comandos admin", inline=False)
     
     await interaction.response.send_message(embed=embed)
 
 # ========== START ==========
 
 print("🚀 VANT Discord Bot iniciando...")
-print(f"   Token: {'****' + DISCORD_TOKEN[-4:] if DISCORD_TOKEN else 'NO CONFIGURADO'}")
-print(f"   Guild: {DISCORD_GUILD_ID}")
-print(f"   Web: {VANT_WEB_BASE_URL}")
+print(f"   Supabase: Conectado")
 
 bot.run(DISCORD_TOKEN)
