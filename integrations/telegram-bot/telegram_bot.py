@@ -78,10 +78,25 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 /torneos - Torneos disponibles
 /leaderboard - Top 10 jugadores
 /web - Link a la web
+/test - Prueba del bot
 
 Usa los botones para navegar fácilmente.
 """
     await update.message.reply_text(help_text, parse_mode="Markdown")
+
+async def test_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Comando /test"""
+    text = """
+🧪 **Test - Bot Funcionando**
+
+✅ El bot está corriendo correctamente
+✅ Conectado a Supabase
+✅ Sistema listo para usar
+
+ID: {}
+Este es un mensaje de prueba.
+""".format(update.message.from_user.id)
+    await update.message.reply_text(text, parse_mode="Markdown")
 
 async def ranked_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Comando /ranked"""
@@ -176,6 +191,7 @@ def main() -> None:
     # Commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("test", test_command))
     application.add_handler(CommandHandler("ranked", ranked_command))
     application.add_handler(CommandHandler("perfil", perfil_command))
     application.add_handler(CommandHandler("torneos", torneos_command))

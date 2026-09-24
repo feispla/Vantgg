@@ -425,6 +425,20 @@ async def admin(interaction: discord.Interaction, accion: str):
     await interaction.response.send_message(embed=embed)
     await sync_event("admin.action", {"userId": str(interaction.user.id), "action": accion})
 
+# ========== TEST ==========
+
+@bot.tree.command(name="test", description="Comando de prueba")
+async def test(interaction: discord.Interaction):
+    """Comando de prueba para verificar que el bot funciona"""
+    embed = discord.Embed(title="🧪 Test - Bot Funcionando", color=discord.Color.green())
+    embed.add_field(name="Estado", value="✅ El bot está corriendo correctamente", inline=False)
+    embed.add_field(name="Supabase", value="✅ Conectado a Supabase", inline=False)
+    embed.add_field(name="Discord ID", value=str(interaction.user.id), inline=False)
+    embed.add_field(name="Usuario", value=interaction.user.name, inline=False)
+    embed.add_field(name="Mensaje", value="Este es un mensaje de prueba", inline=False)
+    
+    await interaction.response.send_message(embed=embed)
+
 # ========== HELP ==========
 
 @bot.tree.command(name="help", description="Ayuda del bot")
@@ -439,6 +453,7 @@ async def help_cmd(interaction: discord.Interaction):
     embed.add_field(name="/evento", value="📅 Eventos", inline=False)
     embed.add_field(name="/temporada", value="📊 Info de temporada", inline=False)
     embed.add_field(name="/admin", value="⚙️ Comandos admin", inline=False)
+    embed.add_field(name="/test", value="🧪 Comando de prueba", inline=False)
     
     await interaction.response.send_message(embed=embed)
 
