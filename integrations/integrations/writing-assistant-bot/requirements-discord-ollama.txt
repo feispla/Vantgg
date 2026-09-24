@@ -1,4 +1,0 @@
-discord.py
-langchain
-langchain-ollama
-python-dotenv

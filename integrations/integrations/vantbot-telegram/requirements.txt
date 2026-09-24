@@ -1,5 +1,0 @@
-langchain
-langchain-ollama
-python-dotenv
-python-telegram-bot
-supabase
