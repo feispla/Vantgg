@@ -276,9 +276,11 @@ function tokenIdentityKey(token: string): string {
               JSON.stringify([sub, typeof teamId === "string" ? teamId : null]),
             )
             .digest("base64url");
-        }
-      }
-    } catch {}
+	        }
+	      }
+	    } catch {
+	      // Invalid JWT payloads fall back to hashing the full token below.
+	    }
   }
   return createHash("sha256").update(token).digest("base64url");
 }
