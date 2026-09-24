@@ -1,0 +1,290 @@
+export type LegalSection = { heading: string; body: string[] };
+
+export type LegalDoc = {
+  slug: string;
+  code: string;
+  category: string;
+  title: string;
+  summary: string;
+  updated: string;
+  sections: LegalSection[];
+};
+
+export const LEGAL_CATEGORIES = [
+  { id: "legal", code: "A", title: "Legal", blurb: "Aviso, términos, privacidad y cuentas." },
+  { id: "ip", code: "B", title: "Propiedad", blurb: "Marcas, assets y reclamaciones." },
+  { id: "community", code: "C", title: "Comunidad", blurb: "Conducta, moderación y abuso." },
+  { id: "competition", code: "D", title: "Competición", blurb: "Tryouts, integridad y rankings." },
+  { id: "users", code: "E", title: "Usuarios", blurb: "Perfiles, roles y verificación." },
+  { id: "commercial", code: "G", title: "Comercial", blurb: "Pagos Stripe, cancelaciones, reembolsos." },
+  { id: "third", code: "I", title: "Terceros", blurb: "Riot, Discord, Stripe y Kick." },
+] as const;
+
+const FOOT =
+  "Este texto describe la operación actual de CROSAIM / VANTCALL. La entidad societaria definitiva, domicilio y NIF están pendientes de constitución; hasta entonces opera FEISS (FEISPLA) y los cobros se procesan por Stripe a nombre de feispla, Ltd. No sustituye asesoría jurídica.";
+
+export const LEGAL_DOCS: LegalDoc[] = [
+  {
+    slug: "aviso-legal",
+    code: "A.01",
+    category: "legal",
+    title: "Aviso legal",
+    summary: "Quién opera CROSAIM, cómo contactar y qué está todavía por constituir.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Identidad",
+        body: [
+          "CROSAIM es la capa pública del ecosistema VANTCALL, operada por FEISS (FEISPLA). Contacto operativo: feispla@zohomail.com. Presencia: X @feispla · Kick kick.com/feispla · web vantcall.vercel.app.",
+          "Stripe muestra el cobrador como «feispla, Ltd.» / cuenta VANT (acct_1UHFf4EamHVhBbtr). La sociedad, jurisdicción, domicilio y NIF definitivos están pendientes de constitución — no se inventan aquí.",
+        ],
+      },
+      {
+        heading: "Marcas",
+        body: [
+          "CROSAIM es la marca pública del portal. VANTCALL es el marco legal y de producto. VANT Sports es la org competitiva. VANT Verified y CROSAIM: VEIL son líneas futuras o en construcción.",
+          FOOT,
+        ],
+      },
+    ],
+  },
+  {
+    slug: "politica-vant",
+    code: "A.00",
+    category: "legal",
+    title: "Política VANT",
+    summary: "Reglas de la plataforma VANT / VANTCALL: cuentas, tickets, Ranked y pagos Stripe.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Alcance",
+        body: [
+          "Esta política cubre vantcall, cuentas VANT, tickets BASIC/PRO/ELITE, membresías, Ranked y torneos. Complementa Términos y Privacidad.",
+          "Los pagos se procesan por Stripe a nombre de feispla, Ltd. / VANT. PayPal solo aparece si está habilitado como método de Stripe. No pedimos credenciales de PayPal.",
+        ],
+      },
+      {
+        heading: "Cuentas",
+        body: [
+          "Puedes entrar con Google, X o email/contraseña. Discord OAuth se activará cuando el proveedor esté federado; hasta entonces no se simula.",
+          "Un usuario, una identidad competitiva. La verificación de cuenta no pide documentos en el navegador.",
+        ],
+      },
+      {
+        heading: "Tickets y torneos",
+        body: [
+          "El acceso a torneos se valida en servidor según el ticket pagado. Un cambio en el frontend no otorga cupo.",
+          "Un pago solo se da por confirmado cuando Stripe lo confirma (webhook o recuperación de sesión en servidor).",
+        ],
+      },
+      { heading: "Nota", body: [FOOT] },
+    ],
+  },
+  {
+    slug: "terminos",
+    code: "A.02",
+    category: "legal",
+    title: "Términos de uso",
+    summary: "Condiciones para usar el portal, las membresías y las herramientas de ops.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "El servicio",
+        body: [
+          "CROSAIM vende membresías digitales (Scout gratis, Operator y Command por suscripción mensual en EUR, Founding Mark como pago único) y opera tryouts, roster, eventos y un panel de control.",
+          "El pago confirma la orden. Roles de Discord, arena y herramientas de org se activan en el siguiente ciclo operativo, no en el instante del checkout.",
+        ],
+      },
+      {
+        heading: "Cuentas",
+        body: [
+          "Puedes entrar con Google, X o email/contraseña. Eres responsable de tu gamertag, Discord y de no suplantar a terceros. Un usuario = una identidad competitiva.",
+          "Podemos suspender el acceso por smurf, toxicidad, fraude de pago, trampas o abuso del pipeline de tryouts, con o sin reembolso según el documento de reembolsos.",
+        ],
+      },
+      { heading: "Nota", body: [FOOT] },
+    ],
+  },
+  {
+    slug: "privacidad",
+    code: "A.03",
+    category: "legal",
+    title: "Privacidad",
+    summary: "Qué datos guardamos, para qué, y cómo pedir acceso o borrado.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Datos que tratamos",
+        body: [
+          "Cuenta: email, nombre de proveedor (Google/X), identificador de sesión.",
+          "Ops: gamertag, Discord, rol, juego, notas de tryout, RSVP a eventos.",
+          "Pagos: Stripe guarda tarjeta y facturación. CROSAIM guarda ids de sesión, plan, email y Discord asociados al pago. No vemos tu número de tarjeta.",
+        ],
+      },
+      {
+        heading: "Finalidad",
+        body: [
+          "Operar membresías, tryouts, roster y soporte. No vendemos listas. Analytics de Vercel solo si aceptas cookies no esenciales.",
+          "Para ejercer acceso, rectificación o borrado: feispla@zohomail.com o el formulario de solicitudes. Plazo operativo: 30 días.",
+        ],
+      },
+      { heading: "Nota", body: [FOOT] },
+    ],
+  },
+  {
+    slug: "cookies",
+    code: "A.04",
+    category: "legal",
+    title: "Cookies",
+    summary: "Cookies esenciales de sesión y analítica opcional.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Esenciales",
+        body: [
+          "Sesión de cuenta (Better Auth, cookies HttpOnly). Imprescindibles para login, postulaciones y panel.",
+        ],
+      },
+      {
+        heading: "Analítica",
+        body: [
+          "Vercel Web Analytics, solo si aceptas. Mide visitas agregadas. Puedes rechazarlas en el banner o en /cookies.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "reembolsos",
+    code: "G.01",
+    category: "commercial",
+    title: "Pagos, cancelación y reembolsos",
+    summary: "EUR vía Stripe. Qué se reembolsa y qué no.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Precios",
+        body: [
+          "Scout: 0 €. Operator: 10 €/mes. Command: 29 €/mes. Founding Mark: 19 € pago único (cupo 50). Impuestos según configuración fiscal de Stripe (tax inclusive en varios precios live).",
+        ],
+      },
+      {
+        heading: "Reembolsos",
+        body: [
+          "Founding Mark: reembolso total si lo pides en 14 días y no usaste el Operator incluido.",
+          "Operator y Command: cancelas cuando quieras; el período ya pagado no se prorratea salvo fallo de servicio atribuible a CROSAIM.",
+          "Abuso, trampas o fraude: cierre de acceso sin reembolso.",
+        ],
+      },
+      {
+        heading: "Checkout",
+        body: [
+          "El cobro live corre en Stripe Checkout de vantcall.vercel.app. Esta capa de producto redirige a ese checkout para no duplicar secretos.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "comunidad",
+    code: "C.01",
+    category: "community",
+    title: "Código de conducta",
+    summary: "Cómo se juega y se habla aquí.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Reglas",
+        body: [
+          "Cero acoso, hate, doxxing, spam o suplantación. Discute el juego, no a la persona.",
+          "El staff (ops / Command) puede mutear, kick o ban. Las apelaciones van a feispla@zohomail.com en 7 días.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "competicion",
+    code: "D.01",
+    category: "competition",
+    title: "Reglas de competición y tryouts",
+    summary: "Integridad, smurf, VODs y prioridad de cola.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Tryouts",
+        body: [
+          "Scout entra a la cola. Operator y Founding Mark tienen prioridad de revisión. El resultado no está garantizado: es un proceso de roster, no una compra de plaza.",
+          "Un VOD reciente y Discord verificable. Smurf o cuentas compartidas = descarte.",
+        ],
+      },
+      {
+        heading: "Integridad",
+        body: [
+          "Prohibido cheat, lag switch, win-trading y filtrar strats de scrim. Premios, si los hay, se anuncian por evento y pueden requerir identidad verificada.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "propiedad",
+    code: "B.01",
+    category: "ip",
+    title: "Propiedad intelectual",
+    summary: "Qué es de FEISPLA y qué no puedes usar sin permiso.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Assets",
+        body: [
+          "Logo CROSAIM, copy, UI, VODs de org y materiales de ops son © FEISPLA. No los uses en merch, orgs rivales o anuncios sin licencia.",
+          "Para collabs o prensa: feispla@zohomail.com.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "usuarios",
+    code: "E.01",
+    category: "users",
+    title: "Cuentas, roles y VANT Verified",
+    summary: "Scout, Operator, Command, admin y la línea Verified.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Roles",
+        body: [
+          "Scout: entrada gratuita. Operator: jugador de pago. Command: org. Admin: panel /admin, asignado internamente (no se auto-concede).",
+          "VANT Verified es una línea futura de identidad competitiva. Hoy no está activa: no se vende ni se promete como feature live.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "terceros",
+    code: "I.01",
+    category: "third",
+    title: "Riot, Discord, Stripe y Kick",
+    summary: "CROSAIM es independiente. Cómo usamos a terceros.",
+    updated: "2026-09-20",
+    sections: [
+      {
+        heading: "Riot / VALORANT",
+        body: [
+          "CROSAIM / VANTCALL / VANT Sports no están afiliados, patrocinados ni respaldados por Riot Games. VALORANT y Riot Games son marcas de sus titulares.",
+        ],
+      },
+      {
+        heading: "Proveedores",
+        body: [
+          "Stripe procesa pagos. Discord aloja comunidad y roles (el bot VantBot es un worker externo; el token nunca va al frontend). Kick aloja el stream de FEISS. Vercel aloja la web y analytics. Google/X se usan solo para login vía el broker de Grok.",
+        ],
+      },
+    ],
+  },
+];
+
+export function docBySlug(slug: string) {
+  return LEGAL_DOCS.find((d) => d.slug === slug) ?? null;
+}
+
+export function docsByCategory(id: string) {
+  return LEGAL_DOCS.filter((d) => d.category === id);
+}

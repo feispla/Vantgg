@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-0vZSBttN.js";var t=e();function n({code:e,label:n}){return(0,t.jsxs)(`p`,{className:`font-mono flex items-center gap-3 text-[11px] uppercase tracking-[0.2em] text-accent`,children:[(0,t.jsx)(`span`,{className:`text-subtle`,children:e}),(0,t.jsx)(`span`,{className:`h-px w-8 bg-accent/60`}),n]})}export{n as t};

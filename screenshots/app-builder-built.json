@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "VANTS",
+      "hasCanvas": false,
+      "bodyTextLen": 2500,
+      "bodyTextHash": "0660685785db5de4e496b123e9daccc4ba682688f285eabc81393e019100b2de",
+      "bodyTextPrefix": "VANTS 01RANKED 02JUGADORES 03TORNEOS 04TICKETS 05EVENTOS JUGAR 0",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "VANTS",
+      "hasCanvas": false,
+      "bodyTextLen": 2443,
+      "bodyTextHash": "2372f4ee138480e16c31ef12d91fdc2e8c6d5eaf06b54e0765a6309a13d72c12",
+      "bodyTextPrefix": "VANTS 00 / TEMPORADA 1 VANT REALM Circuito competitivo con insig",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
