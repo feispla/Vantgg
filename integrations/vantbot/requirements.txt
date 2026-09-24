@@ -1,0 +1,6 @@
+launchdarkly-ai-python
+launchdarkly-server-sdk
+launchdarkly-ai-langchain-agents
+langchain
+langchain-anthropic
+python-dotenv
