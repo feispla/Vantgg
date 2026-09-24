@@ -33,6 +33,7 @@ function Login() {
 
   const google = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "google"), []);
   const x = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "twitter"), []);
+  const discord = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "discord"), []);
 
   async function onEmail(e: FormEvent) {
     e.preventDefault();
@@ -88,6 +89,22 @@ function Login() {
                 Continuar con X
               </button>
             ) : null}
+            {discord ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod("discord");
+                  void signIn(discord.providerId, { callbackURL });
+                }}
+                className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+              >
+                Continuar con Discord
+              </button>
+            ) : (
+              <p className="rounded-xl border border-line px-4 py-3 text-sm text-muted">
+                Discord no está configurado todavía
+              </p>
+            )}
           </div>
           <p className="my-6 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-subtle">
             o email / password
