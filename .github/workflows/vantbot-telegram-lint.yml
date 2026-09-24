@@ -1,0 +1,61 @@
+name: VantBot Telegram - Lint & Test
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'integrations/vantbot-telegram/**'
+  pull_request:
+    branches: [master]
+    paths:
+      - 'integrations/vantbot-telegram/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          cd integrations/vantbot-telegram
+          pip install -q -r requirements.txt
+      
+      - name: Lint with pylint
+        run: |
+          cd integrations/vantbot-telegram
+          pip install -q pylint
+          pylint --errors-only bot.py vant_db.py || true
+      
+      - name: Type check with mypy (basic)
+        run: |
+          cd integrations/vantbot-telegram
+          pip install -q mypy
+          mypy --ignore-missing-imports bot.py vant_db.py || true
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Scan for exposed secrets
+        run: |
+          cd integrations/vantbot-telegram
+          if git log --all -p | grep -iE "token|secret|password" | grep -v "TELEGRAM_BOT_TOKEN=\[REDACTED\]"; then
+            echo "❌ Posibles secretos expuestos en el historio"
+            exit 1
+          fi
+          echo "✅ Sin secretos expuestos"
+      
+      - name: Check .env not committed
+        run: |
+          if [ -f "integrations/vantbot-telegram/.env" ]; then
+            echo "❌ .env committed (debería estar en .gitignore)"
+            exit 1
+          fi
+          echo "✅ .env no fue commiteado"
