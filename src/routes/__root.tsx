@@ -7,9 +7,9 @@ import { SiteHeader } from "@/components/site-header";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "VANT REALM";
+const APP_NAME = "VANTS";
 const APP_DESCRIPTION =
-  "VANT REALM — circuito competitivo. Ranked, insignias Bronze a Legends, torneos y perfiles de jugador.";
+  "VANTS — circuito competitivo. Ranked, insignias Bronze a Legends, torneos y perfiles de jugador.";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -73,9 +73,9 @@ function NotFound() {
     <main className="mx-auto max-w-xl px-4 py-24 text-center">
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">404</p>
       <h1 className="mt-4 font-display text-4xl font-semibold">Página no encontrada</h1>
-      <p className="mt-3 text-muted">Esa ruta no existe en VANT REALM.</p>
+      <p className="mt-3 text-muted">Esa ruta no existe en VANTS.</p>
       <a href="/" className="mt-8 inline-block text-sm text-accent underline">
-        Volver a REALM
+        Volver a VANTS
       </a>
     </main>
   );

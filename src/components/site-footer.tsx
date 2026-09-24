@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="md:col-span-1">
           <LogoMark />
           <p className="mt-4 max-w-sm text-sm leading-6 text-muted">
-            VANT REALM · circuito competitivo. Ranked, tickets, tryouts y el bot que no duerme.
+            VANTS · circuito competitivo. Ranked, tickets, tryouts y el bot que no duerme.
           </p>
         </div>
         <div>
@@ -44,7 +44,7 @@ export function SiteFooter() {
       </div>
       <div className="border-t border-line">
         <p className="mx-auto flex w-full max-w-6xl flex-wrap justify-between gap-3 px-4 py-5 font-mono text-[10px] uppercase tracking-[0.14em] text-subtle sm:px-6">
-          <span>© 2026 VANT REALM. Todos los derechos reservados.</span>
+          <span>© 2026 VANTS. Todos los derechos reservados.</span>
           <span>Temporada 1 · VantBot</span>
         </p>
       </div>
