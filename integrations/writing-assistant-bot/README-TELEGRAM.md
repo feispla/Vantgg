@@ -38,6 +38,8 @@ Busca tu bot en Telegram, pulsa `/start` y envíale un mensaje.
 
 ## 3. Railway 24/7
 
+Para crear el servicio de Telegram en Railway, usa este repositorio y configura **Root Directory** como `/integrations/writing-assistant-bot`. El archivo `railway.json` ya define el arranque `python telegram_bot.py`; como respaldo también existe un `Procfile`.
+
 El bot puede alojarse en Railway, pero `127.0.0.1` allí no es tu PC. Para funcionar con tu PC apagada, necesitas ejecutar Ollama en un servidor accesible desde Railway y configurar allí:
 
 ```text
