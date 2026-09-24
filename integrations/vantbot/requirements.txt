@@ -1,6 +1,4 @@
-launchdarkly-ai-python
-launchdarkly-server-sdk
-launchdarkly-ai-langchain-agents
-langchain
-langchain-anthropic
-python-dotenv
+discord.py==2.4.0
+python-dotenv==1.0.0
+requests==2.31.0
+aiohttp==3.9.1

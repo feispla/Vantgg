@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copiar código del bot
 COPY discord_bot.py .
-COPY main.py .
 
 # Comando para ejecutar el bot
 CMD ["python", "discord_bot.py"]
