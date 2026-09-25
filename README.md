@@ -1,4 +1,4 @@
-# VANT
+# VanteIAp
 
 VANT es una plataforma competitiva conectada a Discord. La web y el bot comparten la misma fuente de datos para que cuentas, perfiles, rangos, MMR, partidas, torneos, eventos, tickets y operaciones estén sincronizados.
 
