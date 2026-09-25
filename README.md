@@ -1,19 +1,21 @@
 # VANT
 
-VANT es una plataforma competitiva conectada a Discord. La web y VantBot deben utilizar Supabase como fuente de datos canónica. La web se despliega en Vercel y el bot se ejecuta como un servicio independiente en Railway.
+VANT es una plataforma competitiva conectada a Discord. La web y VantBot comparten Supabase como fuente de datos canónica para mantener sincronizados jugadores, perfiles, rangos, MMR, partidas, temporadas, torneos, eventos, tickets y operaciones.
 
 ## Arquitectura
 
 - **Web VANT:** aplicación web desarrollada con Vite. Incluye la experiencia pública, autenticación, perfiles y funciones competitivas y administrativas.
-- **VantBot:** bot de Discord desarrollado en Python. Ejecuta comandos de jugadores, Ranked, temporadas, torneos, eventos y administración.
-- **Supabase:** base de datos compartida y canónica para los datos de VANT.
-- **Sincronización web-bot:** los componentes deben comunicarse mediante una API autenticada y solicitudes firmadas. La tabla `vant_sync_events` está presente en la base de datos para registrar eventos de sincronización; su existencia no confirma por sí sola que la API o el proceso de entrega estén implementados o desplegados.
-- **Ollama:** proveedor opcional para funciones de asistente. No debe controlar MMR, rangos, resultados ni permisos administrativos.
+- **VantBot:** bot oficial de Discord desarrollado en Python. Ejecuta comandos de jugadores, Ranked, temporadas, torneos, eventos y administración.
+- **Supabase:** base de datos canónica compartida por la web y el bot.
+- **API de sincronización:** comunicación autenticada entre la web y el bot mediante solicitudes firmadas.
+- **Ollama:** proveedor opcional para funciones de asistente. No controla MMR, rangos, resultados ni permisos administrativos.
 - **Stripe:** gestiona pagos y comprobaciones de acceso cuando corresponda.
 
-## Estado actual de la base de datos
+El bot debe ejecutarse como un servicio separado de la web. Ambos deben utilizar la misma fuente de datos; no se deben crear bases de datos paralelas para VantBot.
 
-El esquema público de Supabase ya contiene tablas relacionadas con:
+## Estado del esquema de Supabase
+
+El esquema público revisado contiene tablas para:
 
 - **Jugadores y cuentas:** `players`, `player_discord_accounts`, `profiles`
 - **Ranked:** `seasons`, `season_player_stats`, `ranked_matches`, `ranked_queue`, `ranked_rules`, `ranked_history`
@@ -23,11 +25,13 @@ El esquema público de Supabase ya contiene tablas relacionadas con:
 - **Postulaciones y auditoría:** `postulaciones`, `postulaciones_auditoria`, `audit_logs`
 - **Sincronización:** `vant_sync_events`
 
-En la revisión actual, la mayoría de estas tablas no tenían filas; `tournaments` tenía cuatro. La existencia de las tablas confirma que el esquema está preparado, pero no que todas las pantallas, comandos, rutas API o automatizaciones estén ya implementadas.
+En la revisión de la base de datos, la mayoría de estas tablas no tenían filas y `tournaments` tenía cuatro. La presencia de las tablas confirma que existe estructura en la base de datos, pero no confirma que todas las pantallas, rutas, comandos o procesos estén implementados y desplegados.
 
-El proyecto también contiene tablas `bots`, `conversations` y `connections_live` con referencias a Botpress. No asumir que esas tablas forman parte de la integración de VantBot sin comprobar el código.
+El esquema también contiene tablas `bots`, `conversations` y `connections_live` con referencias a Botpress. No asumir que esas tablas forman parte de VantBot sin comprobar el código correspondiente.
 
-## Funciones previstas del bot
+## Funciones previstas de VantBot
+
+La siguiente lista describe los comandos previstos. Confirma su implementación en el código antes de considerarlos disponibles en producción.
 
 ### Ranked
 
@@ -38,7 +42,6 @@ El proyecto también contiene tablas `bots`, `conversations` y `connections_live
 - `/ranked leaderboard`
 - `/ranked historial`
 - `/ranked partida`
-- `/ranked cola`
 - `/ranked cancelar`
 - `/ranked resultado`
 - `/ranked reglas`
@@ -58,14 +61,35 @@ El proyecto también contiene tablas `bots`, `conversations` y `connections_live
 - `/cuenta desconectar`
 - `/cuenta privacidad`
 
-### Torneos, tickets y eventos
+### Torneos
 
-- `/torneo lista`, `/torneo ver`, `/torneo registrar`, `/torneo cancelar`
-- `/torneo participantes`, `/torneo bracket`, `/torneo partida`, `/torneo resultado`
-- `/ticket crear`, `/ticket cerrar`, `/ticket reclamar`
-- `/ticket agregar`, `/ticket remover`, `/ticket categoria`
-- `/evento lista`, `/evento ver`, `/evento registrar`, `/evento cancelar`
-- `/evento participantes`, `/evento recordatorio`, `/evento calendario`
+- `/torneo lista`
+- `/torneo ver`
+- `/torneo registrar`
+- `/torneo cancelar`
+- `/torneo participantes`
+- `/torneo bracket`
+- `/torneo partida`
+- `/torneo resultado`
+
+### Tickets
+
+- `/ticket crear`
+- `/ticket cerrar`
+- `/ticket reclamar`
+- `/ticket agregar`
+- `/ticket remover`
+- `/ticket categoria`
+
+### Eventos
+
+- `/evento lista`
+- `/evento ver`
+- `/evento registrar`
+- `/evento cancelar`
+- `/evento participantes`
+- `/evento recordatorio`
+- `/evento calendario`
 
 ### Temporada y administración
 
@@ -84,9 +108,9 @@ El proyecto también contiene tablas `bots`, `conversations` y `connections_live
 - `/admin leaderboard actualizar`
 - `/menu`
 
-Esta lista describe las funciones previstas; confirmar en el código cuáles están implementadas. Los comandos administrativos deben comprobar los roles autorizados antes de realizar cambios.
+Los comandos administrativos deben comprobar que la persona tenga los roles autorizados antes de realizar cambios.
 
-La regla prevista es que la primera cuenta real que ejecute `/cuenta crear` pueda iniciar la Temporada 1. El leaderboard comenzaría vacío hasta que existan partidas válidas. Confirmar esta lógica en el código antes de presentarla como comportamiento activo.
+La regla prevista es que la primera cuenta real que ejecute `/cuenta crear` pueda iniciar automáticamente la Temporada 1. El leaderboard comienza vacío hasta que existan partidas válidas. Confirma esta lógica en el código antes de presentarla como comportamiento activo.
 
 ## Desarrollo local
 
