@@ -117,7 +117,7 @@ function Login() {
                   setMethod("discord");
                   void signIn(discord.providerId, { callbackURL });
                 }}
-                className={cn(buttonVariants({ variant: "outline" }), "w-full")}
+                className={cn(buttonVariants({ variant: "ghost" }), "w-full")}
               >
                 Continuar con Discord
               </button>
