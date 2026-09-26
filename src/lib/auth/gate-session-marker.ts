@@ -1,5 +1,5 @@
 /**
- * Client-readable marker for gate-materialized sessions ("Sign in with Grok"
+ * Client-readable marker for gate-materialized sessions ("Sign in with auth"
  * zero-click sessions minted by `gate-session.server.ts`). Signing out of a
  * gate session is a no-op — the next request re-materializes it from
  * `x-grok-identity` — so `UserButton` uses this to hide its sign-out control.
@@ -8,7 +8,7 @@
  * plant a parent-domain copy that the host-only clear could never expire.
  * Client-safe: no server imports.
  */
-export const GATE_SESSION_MARKER_COOKIE = "__Host-grok_gate_session";
+export const GATE_SESSION_MARKER_COOKIE = "__Host-auth_gate_session";
 
 export function hasGateSessionMarker(): boolean {
   if (typeof document === "undefined") return false;

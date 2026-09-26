@@ -3,7 +3,7 @@
  *
  * This file is kept for backwards compatibility. The Discord OAuth provider is
  * configured as a direct `genericOAuth` entry in `server.ts` (bypassing the
- * Grok auth broker), using `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` env vars
+ * auth broker), using `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` env vars
  * and Discord's own OAuth endpoints.
  *
  * @deprecated Use the config in `server.ts` instead.

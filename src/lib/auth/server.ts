@@ -5,13 +5,13 @@
  * local email/password, flip the flag in `./email-password` only (see auth skill).
  *
  * The app runs its own Better Auth at `/api/auth/*`, so the session cookie stays
- * on this app's own origin. Sign-in federates to the shared **Grok auth broker**
- * (`GROK_AUTH_ISSUER`) via the `genericOAuth` plugin for Google and X. Discord
+ * on this app's own origin. Sign-in federates to the shared **auth broker**
+ * (`AUTH_ISSUER`) via the `genericOAuth` plugin for Google and X. Discord
  * uses DIRECT OAuth (bypassing the broker) with its own client credentials,
  * because the broker does not support Discord as an upstream.
  *
  * Tri-mode:
- *   - Deployed: the deployer injects a per-app `GROK_AUTH_*` + `BETTER_AUTH_URL`
+ *   - Deployed: the deployer injects a per-app `AUTH_*` + `BETTER_AUTH_URL`
  *     + `DATABASE_URL`, so real federated auth is persisted in Postgres.
  *   - Sandbox live preview: no injection -> falls back to the shared **preview
  *     client** (`./preview`) and derives the preview's `https://*.grok-sandbox.com`
@@ -37,10 +37,10 @@ import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
-import { GROK_PROVIDERS } from "./providers";
+import { AUTH_PROVIDERS } from "./providers";
 import { pgliteDialect } from "./pglite-dialect";
 import {
-  GROK_ISSUER_DEFAULT,
+  AUTH_ISSUER_DEFAULT,
   PREVIEW_ALLOWED_HOSTS,
   PREVIEW_CLIENT_ID,
   PREVIEW_CLIENT_SECRET,
@@ -56,11 +56,11 @@ void ensureDbReady();
  * restart clears both the secret and PGLite together.
  */
 const globalAuthRef = globalThis as typeof globalThis & {
-  __grokAuthPreviewSecret__?: string;
+  __authPreviewSecret__?: string;
 };
 function previewAuthSecret(): string {
-  globalAuthRef.__grokAuthPreviewSecret__ ??= randomBytes(32).toString("hex");
-  return globalAuthRef.__grokAuthPreviewSecret__;
+  globalAuthRef.__authPreviewSecret__ ??= randomBytes(32).toString("hex");
+  return globalAuthRef.__authPreviewSecret__;
 }
 
 /** Read an env var, treating empty/whitespace as unset. */
@@ -76,13 +76,13 @@ const authDisabled = env("VITE_AUTH_ENABLED") === "false";
 // Broker federation creds: the deployer injects a per-app client when deployed;
 // otherwise fall back to the shared live-preview client, which the broker accepts
 // for any `*.grok-sandbox.com` callback (see `./preview`).
-const grokIssuer = env("GROK_AUTH_ISSUER") ?? GROK_ISSUER_DEFAULT;
-const grokClientId = env("GROK_AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
-const grokClientSecret = env("GROK_AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
+const authIssuer = env("AUTH_ISSUER") ?? AUTH_ISSUER_DEFAULT;
+const authClientId = env("AUTH_CLIENT_ID") ?? PREVIEW_CLIENT_ID;
+const authClientSecret = env("AUTH_CLIENT_SECRET") ?? PREVIEW_CLIENT_SECRET;
 
 /** True when federated sign-in is active (real auth is enforced). */
 export const authConfigured =
-  !authDisabled && Boolean(grokClientId && grokClientSecret);
+  !authDisabled && Boolean(authClientId && authClientSecret);
 
 // This app's own Better Auth origin. When deployed the deployer injects the
 // public URL. In the sandbox live preview there's no fixed URL (each preview gets
@@ -125,7 +125,7 @@ const trustedOrigins: string[] = explicitBaseURL
     ];
 
 // ── Direct Discord OAuth (bypasses the broker) ───────────────────────────────
-// The Grok auth broker only supports Google and X as upstreams. Discord uses
+// The auth broker only supports Google and X as upstreams. Discord uses
 // direct OAuth with its own client credentials (`DISCORD_CLIENT_ID` /
 // `DISCORD_CLIENT_SECRET`), configured in the Discord Developer Portal with the
 // callback `${BETTER_AUTH_URL}/api/auth/oauth2/callback/discord`.
@@ -134,16 +134,25 @@ const discordClientSecret = env("DISCORD_CLIENT_SECRET");
 const discordConfigured =
   !authDisabled && Boolean(discordClientId && discordClientSecret);
 
+// ── Direct Microsoft OAuth (bypasses the broker) ─────────────────────────────
+// Microsoft uses direct OAuth with its own client credentials
+// (`MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET`), configured in Azure AD,
+// with the callback `${BETTER_AUTH_URL}/api/auth/oauth2/callback/microsoft`.
+const microsoftClientId = env("MICROSOFT_CLIENT_ID");
+const microsoftClientSecret = env("MICROSOFT_CLIENT_SECRET");
+const microsoftConfigured =
+  !authDisabled && Boolean(microsoftClientId && microsoftClientSecret);
+
 const databaseUrl = env("DATABASE_URL");
 
 // Static broker OAuth endpoints (skip OIDC discovery on every sign-in / callback).
 // Discovery would cost an extra network hop to the broker before the popup can
 // even redirect to Google/X — the live-preview popup felt stuck on the app for
 // that whole round-trip. These paths match the broker's discovery document.
-const issuerBase = grokIssuer.replace(/\/+$/, "");
-const grokAuthorizationUrl = `${issuerBase}/api/auth/oauth2/authorize`;
-const grokTokenUrl = `${issuerBase}/api/auth/oauth2/token`;
-const grokUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
+const issuerBase = authIssuer.replace(/\/+$/, "");
+const authAuthorizationUrl = `${issuerBase}/api/auth/oauth2/authorize`;
+const authTokenUrl = `${issuerBase}/api/auth/oauth2/token`;
+const authUserInfoUrl = `${issuerBase}/api/auth/oauth2/userinfo`;
 
 // Real Postgres when `DATABASE_URL` is set (deployed apps), else the app's
 // embedded PGLite (preview) via a Kysely dialect — so Better Auth persists to the
@@ -155,33 +164,37 @@ const database = databaseUrl
   : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
 /** Session token cookie name — also read by the live-preview popup completion page. */
-export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
+export const SESSION_TOKEN_COOKIE = "__Host-auth.session_token";
 
 // Built separately so the `betterAuth({...})` call stays easy to edit without
 // breaking brackets (models often trip on the conditional plugin spread).
 //
-// Two OAuth paths:
-//   1. Broker providers (Google, X) — federate through the Grok auth broker.
+// Three OAuth paths:
+//   1. Broker providers (Google, X) — federate through the auth broker.
 //   2. Discord — direct OAuth to Discord's own endpoints (broker doesn't
 //      support Discord as an upstream).
-// Both are registered in the SAME `genericOAuth` plugin instance so the client
-// can call `signIn.oauth2({ providerId })` uniformly for all three.
-const brokerProviders = GROK_PROVIDERS.filter((p) => p.idp !== "discord");
-const anyAuthConfigured = authConfigured || discordConfigured;
+//   3. Microsoft — direct OAuth to Microsoft's own endpoints (broker doesn't
+//      support Microsoft as an upstream).
+// All are registered in the SAME `genericOAuth` plugin instance so the client
+// can call `signIn.oauth2({ providerId })` uniformly for all providers.
+const brokerProviders = AUTH_PROVIDERS.filter(
+  (p) => p.idp !== "discord" && p.idp !== "microsoft",
+);
+const anyAuthConfigured = authConfigured || discordConfigured || microsoftConfigured;
 
-const grokOAuthPlugin = anyAuthConfigured
+const oauthPlugin = anyAuthConfigured
   ? genericOAuth({
       config: [
         // ── Broker providers (Google, X) ──────────────────────────────────
         ...brokerProviders.map(({ providerId, idp }) => ({
           providerId,
-          clientId: grokClientId as string,
-          clientSecret: grokClientSecret as string,
+          clientId: authClientId as string,
+          clientSecret: authClientSecret as string,
           // Prefer static endpoints over `discoveryUrl` so initiating (and
           // completing) OAuth does not wait on a broker discovery fetch.
-          authorizationUrl: grokAuthorizationUrl,
-          tokenUrl: grokTokenUrl,
-          userInfoUrl: grokUserInfoUrl,
+          authorizationUrl: authAuthorizationUrl,
+          tokenUrl: authTokenUrl,
+          userInfoUrl: authUserInfoUrl,
           scopes: ["openid", "profile", "email"],
           // `prompt: "login"` forces the broker to re-authenticate against the
           // upstream on every sign-in instead of silently reusing an existing
@@ -190,6 +203,22 @@ const grokOAuthPlugin = anyAuthConfigured
           // and can pick (or switch) which account to sign in with.
           authorizationUrlParams: { idp, prompt: "login" },
         })),
+        // ── Direct Microsoft OAuth (bypasses the broker) ──────────────────
+        // Microsoft's OAuth endpoints are used directly with the app's own
+        // Microsoft client credentials. The callback path is
+        // `/api/auth/oauth2/callback/microsoft` (Better Auth's genericOAuth
+        // convention), which must be registered in Azure AD.
+        ...(microsoftConfigured
+          ? [{
+              providerId: "microsoft",
+              clientId: microsoftClientId as string,
+              clientSecret: microsoftClientSecret as string,
+              authorizationUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+              tokenUrl: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+              userInfoUrl: "https://graph.microsoft.com/oidc/userinfo",
+              scopes: ["openid", "profile", "email", "User.Read"],
+            }]
+          : []),
         // ── Direct Discord OAuth (bypasses the broker) ─────────────────────
         // Discord's OAuth endpoints are used directly with the app's own
         // Discord client credentials. The callback path is
@@ -233,7 +262,7 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: [
-        ...GROK_PROVIDERS.map((p) => p.providerId),
+        ...AUTH_PROVIDERS.map((p) => p.providerId),
         GATE_PROVIDER_ID,
       ],
       // X's synthetic email is never "verified", so don't gate linking on the
@@ -263,9 +292,9 @@ export const auth = betterAuth({
     defaultCookieAttributes: { secure: true, sameSite: "lax", path: "/" },
     cookies: {
       session_token: { name: SESSION_TOKEN_COOKIE },
-      session_data: { name: "__Host-grok-auth.session_data" },
-      account_data: { name: "__Host-grok-auth.account_data" },
-      dont_remember: { name: "__Host-grok-auth.dont_remember" },
+      session_data: { name: "__Host-auth.session_data" },
+      account_data: { name: "__Host-auth.account_data" },
+      dont_remember: { name: "__Host-auth.dont_remember" },
     },
   },
 
@@ -274,7 +303,7 @@ export const auth = betterAuth({
 
     // One genericOAuth provider per upstream (when auth is on), all federating
     // to the broker with the SAME client and differing only by the `idp` hint.
-    ...(grokOAuthPlugin ? [grokOAuthPlugin] : []),
+    ...(oauthPlugin ? [oauthPlugin] : []),
 
     // Accept `Authorization: Bearer <session-token>` as an alternative to the
     // cookie. Needed for the LIVE PREVIEW: the app runs in an embedded iframe
@@ -296,4 +325,4 @@ export function readSessionToken(): string | null {
 
 // Re-exported for convenience; the array lives in the dependency-free
 // `providers.ts` so the client can import it too.
-export { GROK_PROVIDERS } from "./providers";
+export { AUTH_PROVIDERS } from "./providers";

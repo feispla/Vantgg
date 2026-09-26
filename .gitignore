@@ -1,0 +1,4 @@
+.vercel
+.grok/
+public/__grok/
+node_modules/

@@ -1,1 +1,0 @@
-import{t as e}from"./jsx-runtime-0vZSBttN.js";import{t}from"./useNavigate-a8B_s7pr.js";import{t as n}from"./require-auth-gk7n-P21.js";var r=e();function i(){return(0,r.jsx)(n,{children:(0,r.jsx)(t,{to:`/dashboard`})})}export{i as component};

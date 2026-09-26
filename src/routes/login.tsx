@@ -3,7 +3,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
+import { AUTH_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
 import { withTimeout } from "@/lib/platform/http";
 import { cn } from "@/lib/utils";
 
@@ -29,11 +29,12 @@ function Login() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [method, setMethod] = useState<"idle" | "email" | "google" | "x" | "discord">("idle");
+  const [method, setMethod] = useState<"idle" | "email" | "google" | "microsoft" | "x" | "discord">("idle");
 
-  const google = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "google"), []);
-  const x = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "twitter"), []);
-  const discord = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "discord"), []);
+  const google = useMemo(() => AUTH_PROVIDERS.find((p) => p.idp === "google"), []);
+  const microsoft = useMemo(() => AUTH_PROVIDERS.find((p) => p.idp === "microsoft"), []);
+  const x = useMemo(() => AUTH_PROVIDERS.find((p) => p.idp === "twitter"), []);
+  const discord = useMemo(() => AUTH_PROVIDERS.find((p) => p.idp === "discord"), []);
 
   async function onEmail(e: FormEvent) {
     e.preventDefault();
@@ -56,7 +57,7 @@ function Login() {
     <AuthShell
       kicker="Acceso"
       title="Entra a VANT"
-      subtitle="Google, X, Discord o email. Las postulaciones llegan a Discord por el bot."
+      subtitle="Microsoft, Google, X, Discord o email. Las postulaciones llegan a Discord por el bot."
     >
       {authEnabled ? (
         <>
@@ -77,6 +78,26 @@ function Login() {
                 Google no está configurado todavía
               </p>
             )}
+            {microsoft ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setMethod("microsoft");
+                  void signIn(microsoft.providerId, { callbackURL });
+                }}
+                className={cn(buttonVariants({ variant: "ghost" }), "w-full")}
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <svg width="16" height="16" viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect width="10" height="10" fill="#F25022"/>
+                    <rect x="12" width="10" height="10" fill="#7FBA00"/>
+                    <rect y="12" width="10" height="10" fill="#00A4EF"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
+                  </svg>
+                  Continuar con Microsoft
+                </span>
+              </button>
+            ) : null}
             {x ? (
               <button
                 type="button"

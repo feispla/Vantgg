@@ -1,1 +1,0 @@
-function e(e,t=8e3,n=`Tardó demasiado. Inténtalo de nuevo.`){return new Promise((r,i)=>{let a=setTimeout(()=>i(Error(n)),t);e.then(e=>{clearTimeout(a),r(e)},e=>{clearTimeout(a),i(e)})})}export{e as t};
