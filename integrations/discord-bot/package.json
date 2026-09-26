@@ -1,0 +1,13 @@
+{
+  "name": "vantbot-discord",
+  "version": "1.0.0",
+  "description": "Discord bot for VANT ecosystem - syncs with vantgg.vercel.app",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "dev": "node --watch index.mjs"
+  },
+  "dependencies": {
+    "discord.js": "^14.16.3"
+  }
+}
