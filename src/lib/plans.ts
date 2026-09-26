@@ -50,7 +50,7 @@ export const PLANS: Plan[] = [
     cadence: "once",
     productId: "prod_VHsRdwNODMyOWx",
     priceId: "price_1UHgp0EamHVhBbtrPKcsn55m",
-    liveCheckout: "https://vantcall.vercel.app/join/founding",
+    liveCheckout: "https://vantgg.vercel.app/join/founding",
     features: [
       "Founding Mark de por vida",
       "90 días de Operator incluidos",
@@ -70,7 +70,7 @@ export const PLANS: Plan[] = [
     featured: true,
     productId: "prod_VHryjsGmG3vcZC",
     priceId: "price_1UHIEMEamHVhBbtre6m9Ch9v",
-    liveCheckout: "https://vantcall.vercel.app/join/operator",
+    liveCheckout: "https://vantgg.vercel.app/join/operator",
     features: [
       "Perfil de jugador y stats",
       "Arena de entrenamiento",
@@ -89,7 +89,7 @@ export const PLANS: Plan[] = [
     cadence: "month",
     productId: "prod_VHsMD1SnrnyNCh",
     priceId: "price_1UHIc2EamHVhBbtrKj2SAY3c",
-    liveCheckout: "https://vantcall.vercel.app/join/command",
+    liveCheckout: "https://vantgg.vercel.app/join/command",
     features: [
       "Roster y pipeline de postulaciones",
       "Cupos de eventos y brackets",
@@ -111,5 +111,5 @@ export const OPS_EMAIL_ALT = "feispla@zohomail.com";
 export const CONTACT_EMAIL = "feispla@hotmail.com";
 export const X_HANDLE = "feispla";
 export const KICK_URL = "https://kick.com/feispla";
-export const LIVE_SITE = "https://vantcall.vercel.app";
+export const LIVE_SITE = "https://vantgg.vercel.app";
 export const FOUNDING_CAP = 50;

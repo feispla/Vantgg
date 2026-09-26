@@ -29,7 +29,7 @@ function Login() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [method, setMethod] = useState<"idle" | "email" | "google" | "x">("idle");
+  const [method, setMethod] = useState<"idle" | "email" | "google" | "x" | "discord">("idle");
 
   const google = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "google"), []);
   const x = useMemo(() => GROK_PROVIDERS.find((p) => p.idp === "twitter"), []);
@@ -56,7 +56,7 @@ function Login() {
     <AuthShell
       kicker="Acceso"
       title="Entra a VANT"
-      subtitle="Google, X o email. Las postulaciones llegan a Discord por el bot."
+      subtitle="Google, X, Discord o email. Las postulaciones llegan a Discord por el bot."
     >
       {authEnabled ? (
         <>

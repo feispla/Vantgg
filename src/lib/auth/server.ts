@@ -6,10 +6,9 @@
  *
  * The app runs its own Better Auth at `/api/auth/*`, so the session cookie stays
  * on this app's own origin. Sign-in federates to the shared **Grok auth broker**
- * (`GROK_AUTH_ISSUER`) via the `genericOAuth` plugin — the broker brokers the
- * upstream sign-in methods (Google, X, …) and holds their shared secrets; this
- * app only holds its own client id/secret and names the upstream it wants via
- * each provider's `idp` hint.
+ * (`GROK_AUTH_ISSUER`) via the `genericOAuth` plugin for Google and X. Discord
+ * uses DIRECT OAuth (bypassing the broker) with its own client credentials,
+ * because the broker does not support Discord as an upstream.
  *
  * Tri-mode:
  *   - Deployed: the deployer injects a per-app `GROK_AUTH_*` + `BETTER_AUTH_URL`
@@ -125,6 +124,16 @@ const trustedOrigins: string[] = explicitBaseURL
       ...LOCAL_DEV_ORIGINS,
     ];
 
+// ── Direct Discord OAuth (bypasses the broker) ───────────────────────────────
+// The Grok auth broker only supports Google and X as upstreams. Discord uses
+// direct OAuth with its own client credentials (`DISCORD_CLIENT_ID` /
+// `DISCORD_CLIENT_SECRET`), configured in the Discord Developer Portal with the
+// callback `${BETTER_AUTH_URL}/api/auth/oauth2/callback/discord`.
+const discordClientId = env("DISCORD_CLIENT_ID");
+const discordClientSecret = env("DISCORD_CLIENT_SECRET");
+const discordConfigured =
+  !authDisabled && Boolean(discordClientId && discordClientSecret);
+
 const databaseUrl = env("DATABASE_URL");
 
 // Static broker OAuth endpoints (skip OIDC discovery on every sign-in / callback).
@@ -150,25 +159,54 @@ export const SESSION_TOKEN_COOKIE = "__Host-grok-auth.session_token";
 
 // Built separately so the `betterAuth({...})` call stays easy to edit without
 // breaking brackets (models often trip on the conditional plugin spread).
-const grokOAuthPlugin = authConfigured
+//
+// Two OAuth paths:
+//   1. Broker providers (Google, X) — federate through the Grok auth broker.
+//   2. Discord — direct OAuth to Discord's own endpoints (broker doesn't
+//      support Discord as an upstream).
+// Both are registered in the SAME `genericOAuth` plugin instance so the client
+// can call `signIn.oauth2({ providerId })` uniformly for all three.
+const brokerProviders = GROK_PROVIDERS.filter((p) => p.idp !== "discord");
+const anyAuthConfigured = authConfigured || discordConfigured;
+
+const grokOAuthPlugin = anyAuthConfigured
   ? genericOAuth({
-      config: GROK_PROVIDERS.map(({ providerId, idp }) => ({
-        providerId,
-        clientId: grokClientId as string,
-        clientSecret: grokClientSecret as string,
-        // Prefer static endpoints over `discoveryUrl` so initiating (and
-        // completing) OAuth does not wait on a broker discovery fetch.
-        authorizationUrl: grokAuthorizationUrl,
-        tokenUrl: grokTokenUrl,
-        userInfoUrl: grokUserInfoUrl,
-        scopes: ["openid", "profile", "email"],
-        // `prompt: "login"` forces the broker to re-authenticate against the
-        // upstream on every sign-in instead of silently reusing an existing
-        // broker session. Combined with the broker sending Google
-        // `prompt=select_account`, the user always gets the account chooser
-        // and can pick (or switch) which account to sign in with.
-        authorizationUrlParams: { idp, prompt: "login" },
-      })),
+      config: [
+        // ── Broker providers (Google, X) ──────────────────────────────────
+        ...brokerProviders.map(({ providerId, idp }) => ({
+          providerId,
+          clientId: grokClientId as string,
+          clientSecret: grokClientSecret as string,
+          // Prefer static endpoints over `discoveryUrl` so initiating (and
+          // completing) OAuth does not wait on a broker discovery fetch.
+          authorizationUrl: grokAuthorizationUrl,
+          tokenUrl: grokTokenUrl,
+          userInfoUrl: grokUserInfoUrl,
+          scopes: ["openid", "profile", "email"],
+          // `prompt: "login"` forces the broker to re-authenticate against the
+          // upstream on every sign-in instead of silently reusing an existing
+          // broker session. Combined with the broker sending Google
+          // `prompt=select_account`, the user always gets the account chooser
+          // and can pick (or switch) which account to sign in with.
+          authorizationUrlParams: { idp, prompt: "login" },
+        })),
+        // ── Direct Discord OAuth (bypasses the broker) ─────────────────────
+        // Discord's OAuth endpoints are used directly with the app's own
+        // Discord client credentials. The callback path is
+        // `/api/auth/oauth2/callback/discord` (Better Auth's genericOAuth
+        // convention), which must be registered in the Discord Developer Portal.
+        ...(discordConfigured
+          ? [{
+              providerId: "discord",
+              clientId: discordClientId as string,
+              clientSecret: discordClientSecret as string,
+              authorizationUrl: "https://discord.com/api/oauth2/authorize",
+              tokenUrl: "https://discord.com/api/oauth2/token",
+              userInfoUrl: "https://discord.com/api/users/@me",
+              scopes: ["identify", "email"],
+            }]
+          : []),
+      ],
     })
   : null;
 
