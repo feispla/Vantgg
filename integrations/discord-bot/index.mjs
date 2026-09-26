@@ -1,52 +1,88 @@
 /**
  * VANTBOT — Discord bot for the VANT ecosystem.
  *
- * Connects to Discord, polls the web app (vantgg.vercel.app) for pending
- * sync events, and delivers them to the appropriate Discord channels.
+ * Commands:
+ *   /ranked entrar|placement|perfil|estado|leaderboard|historial|partida|cancelar|resultado|reglas
+ *   /jugador perfil|buscar|estadisticas|comparar|verificar|desconectar
+ *   /jugadores activos
+ *   /cuenta crear|perfil|conectar|desconectar|privacidad
+ *   /torneo lista|ver|registrar|cancelar|participantes|bracket|partida|resultado
+ *   /ticket crear|cerrar|reclamar|agregar|remover|categoria
+ *   /evento lista|ver|registrar|cancelar|participantes|recordatorio|calendario
+ *   /temporada actual|ranking|estadisticas|records
+ *   /admin temporada|cerrar|rango|mmr|validar|anular|torneo|evento|leaderboard
+ *   /menu
+ *
+ * Admin commands check ManageGuild permission before executing.
+ * First /cuenta crear auto-starts Season 1 if no season exists.
+ * Leaderboard starts empty until valid matches exist.
  *
  * Env vars:
- *   DISCORD_BOT_TOKEN     — Discord bot token (from Discord Developer Portal)
- *   DISCORD_GUILD_ID      — The VANT Discord server ID
- *   VANT_WEB_BASE_URL     — Web app base URL (default: https://vantgg.vercel.app)
- *   VANT_BOT_SYNC_SECRET  — Shared secret for HMAC-signed sync requests
- *   VANT_SYNC_INTERVAL_MS — Poll interval (default: 5000)
- *
- * Channels (auto-discovered by name in the guild):
- *   #tryouts, #roster, #announcements, #bot-logs
- *
- * Run: node index.mjs
+ *   DISCORD_BOT_TOKEN, DISCORD_GUILD_ID, VANT_WEB_BASE_URL, VANT_BOT_SYNC_SECRET
  */
 import {
   Client,
   GatewayIntentBits,
-  EmbedBuilder,
   Partials,
+  REST,
+  Routes,
 } from "discord.js";
+import { createHmac, createHash } from "node:crypto";
+import { rankedCommand, handleRanked } from "./commands/ranked.mjs";
+import { jugadorCommand, jugadoresCommand, cuentaCommand, handleJugador, handleJugadores, handleCuenta } from "./commands/jugadores.mjs";
+import { torneoCommand, ticketCommand, eventoCommand, handleTorneo, handleTicket, handleEvento } from "./commands/torneos.mjs";
+import { temporadaCommand, adminCommand, menuCommand, handleTemporada, handleAdmin, handleMenu } from "./commands/admin.mjs";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const WEB_BASE_URL = (process.env.VANT_WEB_BASE_URL || "https://vantgg.vercel.app").replace(/\/+$/, "");
 const SYNC_SECRET = process.env.VANT_BOT_SYNC_SECRET || "";
-const POLL_INTERVAL = Number(process.env.VANT_SYNC_INTERVAL_MS) || 5000;
 
 if (!BOT_TOKEN) { console.error("Falta DISCORD_BOT_TOKEN"); process.exit(1); }
 if (!GUILD_ID) { console.error("Falta DISCORD_GUILD_ID"); process.exit(1); }
-if (!SYNC_SECRET) { console.error("Falta VANT_BOT_SYNC_SECRET"); process.exit(1); }
 
-// ── Channel name mapping ────────────────────────────────────────────────────
-const CHANNEL_MAP = {
-  "application.submitted": "tryouts",
-  "user.registered": "bot-logs",
-  "user.linked_discord": "roster",
-  "ticket.purchased": "announcements",
-  "rank.updated": "roster",
-  "tournament.created": "announcements",
-  "tournament.joined": "bot-logs",
-  "system_error": "bot-logs",
-};
+// ── API client ───────────────────────────────────────────────────────────────
+async function apiGet(path) {
+  const res = await fetch(`${WEB_BASE_URL}${path}`, {
+    method: "GET",
+    headers: signedHeaders("GET", path, ""),
+  });
+  if (!res.ok) return { error: `API ${res.status}` };
+  return res.json();
+}
 
-// ── Discord client ──────────────────────────────────────────────────────────
+async function apiPost(path, body) {
+  const bodyStr = JSON.stringify(body);
+  const res = await fetch(`${WEB_BASE_URL}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", ...signedHeaders("POST", path, bodyStr) },
+    body: bodyStr,
+  });
+  if (!res.ok) return { error: `API ${res.status}` };
+  return res.json();
+}
+
+function signedHeaders(method, path, body) {
+  const headers = {};
+  if (SYNC_SECRET) {
+    const timestamp = Date.now();
+    const nonce = Math.random().toString(36).slice(2);
+    const bodyHash = createHash("sha256").update(body).digest("hex");
+    const payload = [method.toUpperCase(), path, String(timestamp), nonce, bodyHash].join("\n");
+    const signature = createHmac("sha256", SYNC_SECRET).update(payload).digest("hex");
+    headers["x-vant-sync-secret"] = SYNC_SECRET;
+    headers["x-vant-sync-timestamp"] = String(timestamp);
+    headers["x-vant-sync-nonce"] = nonce;
+    headers["x-vant-sync-body-sha256"] = bodyHash;
+    headers["x-vant-sync-signature"] = signature;
+  }
+  return headers;
+}
+
+const api = { get: apiGet, post: apiPost };
+
+// ── Discord client ───────────────────────────────────────────────────────────
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -56,235 +92,58 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-let guild = null;
-const channels = new Map();
+// ── Register slash commands ──────────────────────────────────────────────────
+const allCommands = [
+  rankedCommand,
+  jugadorCommand,
+  jugadoresCommand,
+  cuentaCommand,
+  torneoCommand,
+  ticketCommand,
+  eventoCommand,
+  temporadaCommand,
+  adminCommand,
+  menuCommand,
+];
 
-async function resolveChannels() {
-  guild = await client.guilds.fetch(GUILD_ID);
-  const allChannels = await guild.channels.fetch();
-  for (const ch of allChannels.values()) {
-    if (ch.isTextBased()) channels.set(ch.name, ch);
-  }
-  console.log(`[VANTBOT] Conectado a ${guild.name} — ${channels.size} canales`);
-}
-
-function getChannel(name) {
-  return channels.get(name) || channels.get(`#${name}`) || null;
-}
-
-// ── HMAC signing for sync requests ──────────────────────────────────────────
-import { createHmac } from "node:crypto";
-
-function signPayload(method, path, timestamp, nonce, bodyHash) {
-  const payload = [method.toUpperCase(), path, String(timestamp), nonce, bodyHash].join("\n");
-  return createHmac("sha256", SYNC_SECRET).update(payload).digest("hex");
-}
-
-// ── Event processing ────────────────────────────────────────────────────────
-function buildEmbed(event) {
-  const { type, payload } = event;
-  const color = {
-    "application.submitted": 0x0099ff,
-    "user.registered": 0x00ff00,
-    "user.linked_discord": 0x00ff00,
-    "ticket.purchased": 0xffd700,
-    "rank.updated": 0x9b59b6,
-    "tournament.created": 0xe74c3c,
-    "tournament.joined": 0x1abc9c,
-    "system_error": 0xff0000,
-  }[type] ?? 0x95a5a6;
-
-  const embed = new EmbedBuilder()
-    .setColor(color)
-    .setTimestamp()
-    .setFooter({ text: "VANTBOT", iconURL: client.user?.displayAvatarURL() });
-
-  switch (type) {
-    case "application.submitted":
-      embed.setTitle("📋 Nueva postulación")
-        .addFields(
-          { name: "Usuario", value: payload.discordUsername || payload.userId || "Desconocido", inline: true },
-          { name: "Rol", value: payload.rol || "No especificado", inline: true },
-          { name: "Rango", value: payload.rango || "No especificado", inline: true },
-          { name: "Región", value: payload.region || "No especificada", inline: true },
-        );
-      if (payload.descripcion) embed.setDescription(payload.descripcion);
-      break;
-    case "user.registered":
-      embed.setTitle("👤 Nuevo usuario registrado")
-        .addFields(
-          { name: "Email", value: payload.email || "No disponible", inline: true },
-          { name: "Discord", value: payload.discordId ? `<@${payload.discordId}>` : "No vinculado", inline: true },
-        );
-      break;
-    case "user.linked_discord":
-      embed.setTitle("🔗 Discord vinculado")
-        .addFields(
-          { name: "Usuario", value: `<@${payload.discordId}>`, inline: true },
-        );
-      break;
-    case "ticket.purchased":
-      embed.setTitle("🎟️ Ticket comprado")
-        .addFields(
-          { name: "Código", value: `\`${payload.ticketCode}\``, inline: true },
-          { name: "Tier", value: payload.tier?.toUpperCase() || "N/A", inline: true },
-        );
-      break;
-    case "rank.updated":
-      embed.setTitle("📊 Rango actualizado")
-        .addFields(
-          { name: "Nuevo rango", value: payload.newRank || "N/A", inline: true },
-          { name: "MMR", value: String(payload.mmr ?? "N/A"), inline: true },
-        );
-      break;
-    case "tournament.created":
-      embed.setTitle("🏆 Torneo creado")
-        .addFields(
-          { name: "Nombre", value: payload.name || "Sin nombre", inline: true },
-        );
-      break;
-    case "tournament.joined":
-      embed.setTitle("🎮 Inscripción a torneo")
-        .addFields(
-          { name: "Usuario", value: `<@${payload.userId}>`, inline: true },
-          { name: "Torneo", value: payload.tournamentId || "N/A", inline: true },
-        );
-      break;
-    default:
-      embed.setTitle(`📌 ${type}`).setDescription("```json\n" + JSON.stringify(payload, null, 2).slice(0, 1000) + "\n```");
-  }
-  return embed;
-}
-
-// ── Sync: poll and deliver events ────────────────────────────────────────────
-async function pollAndDeliver() {
-  try {
-    const timestamp = Date.now();
-    const nonce = Math.random().toString(36).slice(2);
-    const bodyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"; // empty body SHA-256
-    const path = "/api/discord/events";
-    const signature = signPayload("GET", path, timestamp, nonce, bodyHash);
-
-    const res = await fetch(`${WEB_BASE_URL}${path}`, {
-      method: "GET",
-      headers: {
-        "x-vant-sync-secret": SYNC_SECRET,
-        "x-vant-sync-timestamp": String(timestamp),
-        "x-vant-sync-nonce": nonce,
-        "x-vant-sync-body-sha256": bodyHash,
-        "x-vant-sync-signature": signature,
-      },
-    });
-
-    if (!res.ok) {
-      if (res.status !== 503) console.warn(`[VANTBOT] Sync API ${res.status}`);
-      return;
-    }
-
-    const data = await res.json();
-    const events = data.events || [];
-    if (events.length === 0) return;
-
-    console.log(`[VANTBOT] ${events.length} evento(s) pendiente(s)`);
-
-    for (const event of events) {
-      const channelName = CHANNEL_MAP[event.event_type] || "bot-logs";
-      const channel = getChannel(channelName);
-      if (!channel) {
-        console.warn(`[VANTBOT] Canal #${channelName} no encontrado`);
-        continue;
-      }
-
-      try {
-        const embed = buildEmbed({ type: event.event_type, payload: typeof event.payload === "string" ? JSON.parse(event.payload) : event.payload });
-        await channel.send({ embeds: [embed] });
-        console.log(`[VANTBOT] Evento ${event.event_type} entregado a #${channelName}`);
-      } catch (err) {
-        console.error(`[VANTBOT] Error entregando evento ${event.id}:`, err.message);
-      }
-
-      // ACK the event
-      await ackEvent(event.id);
-    }
-  } catch (err) {
-    console.error("[VANTBOT] Poll error:", err.message);
-  }
-}
-
-async function ackEvent(eventId) {
-  try {
-    const timestamp = Date.now();
-    const nonce = Math.random().toString(36).slice(2);
-    const body = JSON.stringify({ eventId, status: "delivered" });
-    const bodyHash = (await import("node:crypto")).createHash("sha256").update(body).digest("hex");
-    const path = "/api/discord/ack";
-    const signature = signPayload("POST", path, timestamp, nonce, bodyHash);
-
-    await fetch(`${WEB_BASE_URL}${path}`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-vant-sync-secret": SYNC_SECRET,
-        "x-vant-sync-timestamp": String(timestamp),
-        "x-vant-sync-nonce": nonce,
-        "x-vant-sync-body-sha256": bodyHash,
-        "x-vant-sync-signature": signature,
-      },
-      body,
-    });
-  } catch {
-    // Non-fatal — the event will be re-leased on next poll
-  }
-}
-
-// ── Slash commands ──────────────────────────────────────────────────────────
 async function registerCommands() {
-  if (!guild) return;
-  await guild.commands.set([
-    {
-      name: "ping",
-      description: "Verificar que el bot está activo",
-    },
-    {
-      name: "sync",
-      description: "Forzar sincronización de eventos pendientes",
-    },
-    {
-      name: "ticket",
-      description: "Verificar un ticket por código",
-      options: [{
-        type: 3, // STRING
-        name: "codigo",
-        description: "Código del ticket",
-        required: true,
-      }],
-    },
-  ]);
-  console.log("[VANTBOT] Slash commands registrados");
+  const rest = new REST({ version: "10" }).setToken(BOT_TOKEN);
+  try {
+    await rest.put(Routes.applicationGuildCommands(client.user.id, GUILD_ID), {
+      body: allCommands.map((c) => c.toJSON()),
+    });
+    console.log(`[VANTBOT] ${allCommands.length} slash commands registrados`);
+  } catch (err) {
+    console.error("[VANTBOT] Error registrando comandos:", err.message);
+  }
 }
 
+// ── Command dispatcher ───────────────────────────────────────────────────────
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+  const cmd = interaction.commandName;
+
   try {
-    switch (interaction.commandName) {
-      case "ping":
-        await interaction.reply({ content: "🏓 Pong! VANTBOT está activo.", ephemeral: true });
-        break;
-      case "sync":
-        await interaction.deferReply({ ephemeral: true });
-        await pollAndDeliver();
-        await interaction.editReply({ content: "✅ Sincronización completada." });
-        break;
-      case "ticket":
-        await interaction.deferReply({ ephemeral: true });
-        const code = interaction.options.getString("codigo");
-        await interaction.editReply({ content: `🔍 Verificando ticket \`${code}\`... (usa /api/verify en la web)` });
-        break;
+    switch (cmd) {
+      case "ranked": await handleRanked(interaction, api); break;
+      case "jugador": await handleJugador(interaction, api); break;
+      case "jugadores": await handleJugadores(interaction, api); break;
+      case "cuenta": await handleCuenta(interaction, api); break;
+      case "torneo": await handleTorneo(interaction, api); break;
+      case "ticket": await handleTicket(interaction, api); break;
+      case "evento": await handleEvento(interaction, api); break;
+      case "temporada": await handleTemporada(interaction, api); break;
+      case "admin": await handleAdmin(interaction, api); break;
+      case "menu": await handleMenu(interaction, api); break;
+      default: await interaction.reply({ content: "❌ Comando no reconocido.", ephemeral: true });
     }
   } catch (err) {
-    console.error("[VANTBOT] Command error:", err.message);
-    if (interaction.deferred) await interaction.editReply({ content: "❌ Error al procesar el comando." });
-    else await interaction.reply({ content: "❌ Error al procesar el comando.", ephemeral: true });
+    console.error(`[VANTBOT] Error en /${cmd}:`, err.message);
+    if (interaction.deferred || interaction.replied) {
+      await interaction.followUp({ content: "❌ Error al procesar el comando.", ephemeral: true });
+    } else {
+      await interaction.reply({ content: "❌ Error al procesar el comando.", ephemeral: true });
+    }
   }
 });
 
@@ -292,17 +151,10 @@ client.on("interactionCreate", async (interaction) => {
 client.once("ready", async () => {
   console.log(`[VANTBOT] Logueado como ${client.user.tag}`);
   try {
-    await resolveChannels();
     await registerCommands();
   } catch (err) {
     console.error("[VANTBOT] Setup error:", err.message);
   }
-
-  // Start polling
-  console.log(`[VANTBOT] Polling cada ${POLL_INTERVAL}ms`);
-  setInterval(pollAndDeliver, POLL_INTERVAL);
-  // Initial poll
-  pollAndDeliver();
 });
 
 client.on("error", (err) => console.error("[VANTBOT] Discord error:", err.message));
