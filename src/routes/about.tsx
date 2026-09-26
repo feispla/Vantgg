@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { buttonVariants } from "@/components/ui/button";
 import { KICK_URL } from "@/lib/plans";
+import { SocialLinks } from "@/components/social-links";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/about")({ component: AboutPage });
@@ -31,6 +32,10 @@ function AboutPage() {
         <a href={KICK_URL} target="_blank" rel="noreferrer" className={cn(buttonVariants({ variant: "ghost" }))}>
           Ver stream
         </a>
+      </div>
+      <div className="mt-10">
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.14em] text-subtle">Redes sociales</p>
+        <SocialLinks />
       </div>
     </main>
   );
